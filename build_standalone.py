@@ -35,12 +35,12 @@ JS_FILES = ['data.js', 'app.js', 'intro.js', 'ions.js', 'fx.js']
 # 部署脚手架：随打包一起拷进 dist/，使 dist/ 成为可直接部署的目录
 SCAFFOLD = [
     'llms.txt', 'robots.txt', 'sitemap.xml', 'edgeone.json',
-    'baidu_verify_codeva-TgpH2v8bf3.html',
+    'baidu_verify_codeva-khjd5i8M5L.html',
 ]
 
 # 搜索引擎站点所有权验证标签（按平台要求填入，会自动注入 <head>）
 VERIFY_META_TAGS = [
-    '<meta name="baidu-site-verification" content="codeva-TgpH2v8bf3" />',
+    '<meta name="baidu-site-verification" content="codeva-khjd5i8M5L" />',
 ]
 
 

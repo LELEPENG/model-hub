@@ -95,6 +95,8 @@ def extract_top50(text):
             'ctx': g(r"ctx:\s*'([^']*)'"),
             'price': g(r"price:\s*'([^']*)'"),
             'modality': g(r"modality:\s*'([^']*)'"),
+            'accent': g(r"accent:\s*'([^']*)'"),
+            'open': 'open' in e or '开源' in e,
         })
     return out
 
@@ -138,6 +140,47 @@ def make_noscript(items):
     )
 
 
+def make_prerendered_rank(items):
+    """预渲染榜单 HTML：直接输出 <ol> 内容到 #view，供爬虫/无 JS 读取。
+       运行时 JS 检测到已有内容则跳过重建，只做增强。"""
+    rows = []
+    for it in items:
+        medal = ' top' + str(it["rank"]) if it["rank"] <= 3 else ''
+        accent = it.get('accent', '#6b8afd')
+        rows.append(
+            '<li class="rank-row%s" data-rank="%s" style="--ac:%s">'
+            '<div class="rk">%d</div>'
+            '<div class="rbody">'
+            '<div class="rhd">'
+            '<span class="rnm">%s</span>'
+            '<span class="rvd">%s</span>'
+            '</div>'
+            '<div class="rtags">'
+            '<span class="tag free">开源权重</span>'
+            '<span class="tag">%s</span>'
+            '<span class="tag">%s</span>'
+            '<span class="tag">%s</span>'
+            '</div></div>'
+            '<div class="rscore">'
+            '<div class="sn">%s</div>'
+            '<div class="sbar"><i style="width:%s%%;background:%s"></i></div>'
+            '<div class="sl">综合分</div>'
+            '</div>'
+            '<div class="rgo">›</div>'
+            '</li>' % (
+                medal, it["rank"], accent,
+                it["rank"],
+                it["name"], it["vendor"],
+                it["modality"] or '-',
+                it["ctx"] or '-',
+                it["price"] or '-',
+                it["score"],
+                float(it["score"]),
+                accent
+            ))
+    return '<ol>%s</ol>' % ''.join(rows)
+
+
 def main():
     html = clean_query(read('index.html'))
 
@@ -176,14 +219,38 @@ def main():
     items = extract_top50(read('data.js'))
     if items:
         head_inject.append(make_jsonld(items))
-        # 5. <noscript> 纯文本榜单兜底，注入到空的 #view 容器内
-        noscript = make_noscript(items)
-        html, n_ns = re.subn(r'(<div id="view"[^>]*>)\s*</div>',
-                              lambda m: m.group(1) + noscript + '</div>', html, count=1)
-        if n_ns == 0:
-            print('[!] 未找到空的 #view 容器，noscript 兜底未注入（不影响主流程）')
+        # 5. 预渲染 Top50 榜单 HTML（SEO：爬虫无需执行 JS 即可读到完整排名）
+        #    直接替换 <div id="view"></div> 为含预渲染榜单的内容
+        #    noscript 嵌入在预渲染内容内部：JS 禁用时显示，启用时隐藏
+        prerendered = make_prerendered_rank(items)
+        prerender_html = (
+            '<div id="view" data-prerendered="rank">'
+            '<div class="lab-intro">'
+            '<b>排序方法：</b>以 airankings（7 家独立榜单聚合，2026-09-09）为基准，'
+            '交叉校验 llm-stats 综合指数与 BenchLM BenchAlign v5.2，归一化成本站综合分（满分 100）。'
+            '<b>点任意一行</b>看它的优势、最适合干什么、以及别拿它干什么。'
+            '</div>'
+            '<div class="rank-tools">'
+            '<button class="chip" data-rf="all">全部 50</button>'
+            '<button class="chip" data-rf="open">仅开源权重</button>'
+            '<button class="chip" data-rf="free">有免费档</button>'
+            '<button class="chip" data-rf="cn">国产模型</button>'
+            '</div>'
+            + prerendered +
+            '<div class="callout" style="margin-top:20px">'
+            '<b>怎么读这个榜：</b>综合分只做横向对比，不代表任何官方分数。'
+            '真要落地，先看 <b>适不适合你的场景</b>，再看价格——第 8 名的 Kimi K3 用 30% 的价格保留了 96% 的顶配能力，'
+            '对大多数人比第 1 名更实用。'
+            '</div>'
+            '<noscript>' + re.sub(r'<noscript>', '', make_noscript(items), count=1) + '</noscript>'
+            '</div>'
+        )
+        html, n_prerender = re.subn(r'<div id="view"[^>]*>[^<]*(</div>)',
+                                    lambda m: prerender_html, html, count=1)
+        if n_prerender == 0:
+            print('[!] 未找到 #view 容器，预渲染榜单未注入（不影响主流程）')
     else:
-        print('[!] 未解析到 TOP50，跳过 JSON-LD / noscript 注入')
+        print('[!] 未解析到 TOP50，跳过 JSON-LD / 预渲染注入')
     if head_inject:
         html = html.replace('</head>', '\n'.join(head_inject) + '\n</head>', 1)
 
@@ -206,8 +273,8 @@ def main():
     size = os.path.getsize(out) / 1024.0
     print('[OK] 已生成 %s  (%.1f KB)' % (out, size))
     print('     内联 CSS %d 个 / JS %d 个' % (len(CSS_FILES), len(JS_FILES)))
-    print('     JSON-LD 条目：%d 条 / noscript 兜底：%s'
-          % (len(items), '已注入' if items else '未注入'))
+    print('     JSON-LD 条目：%d 条 / noscript 兜底：%s / 预渲染榜单：%s'
+          % (len(items), '已注入' if items else '未注入', '已注入' if items else '未注入'))
     print('     外部依赖：零（完全自包含，无第三方字体/CDN，规避 PIPL 数据出境风险）')
     print('     部署脚手架已拷入 dist/：%s' % ('、'.join(copied) if copied else '无'))
 

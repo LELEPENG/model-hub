@@ -488,6 +488,11 @@ function closePanel() {
 function render() {
   $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === state.tab));
   const main = $('#view');
+  // 如果 #view 已包含预渲染榜单（SEO prerender），跳过 DOM 重建，只做事件绑定
+  if (state.tab === 'rank' && main && main.dataset.prerendered === 'rank') {
+    bindView();
+    return;
+  }
   if (state.tab === 'hw') main.innerHTML = renderHW();
   else if (state.tab === 'need') main.innerHTML = renderNeed();
   else if (state.tab === 'rank') main.innerHTML = renderRank();

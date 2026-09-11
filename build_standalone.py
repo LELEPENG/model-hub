@@ -37,12 +37,12 @@ JS_FILES = ['data.js', 'app.js', 'intro.js', 'ions.js', 'fx.js']
 # 同时兼容 EdgeOne（edgeone.json）与 Cloudflare Pages（_headers），各自忽略对方格式
 SCAFFOLD = [
     'llms.txt', 'robots.txt', 'sitemap.xml', 'edgeone.json', '_headers',
-    'baidu_verify_codeva-khjd5i8M5L.html',
 ]
 
 # 搜索引擎站点所有权验证标签（按平台要求填入，会自动注入 <head>）
 VERIFY_META_TAGS = [
-    '<meta name="baidu-site-verification" content="codeva-khjd5i8M5L" />',
+    # 示例：'<meta name="baidu-site-verification" content="codeva-xxx" />',
+    # 示例：'<meta name="google-site-verification" content="xxx" />',
 ]
 
 

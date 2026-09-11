@@ -2,7 +2,7 @@
 <!-- 已更新为 EdgeOne 默认真实域名（2026-09-11 部署上线）。若后续绑定自定义域名，请改回对应地址。 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://model-hub.edgeone.dev/</loc>
+    <loc>https://model-hub-994.pages.dev/</loc>
     <lastmod>2026-09-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 部署后请把下面 <loc> 的域名换成你的真实地址：
-     EdgeOne 默认域名为 https://<项目名>.edgeone.app/ ，或你绑定的自定义域名。 -->
+<!-- 已更新为 EdgeOne 默认真实域名（2026-09-11 部署上线）。若后续绑定自定义域名，请改回对应地址。 -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://model-hub.example.com/</loc>
+    <loc>https://model-hub-dpb1yscszx1c.edgeone.dev/</loc>
     <lastmod>2026-09-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>

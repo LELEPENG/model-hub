@@ -2,7 +2,8 @@
 """
 build_standalone.py
 把 model-hub 多文件站点打包成一个自包含的 HTML，并整理成可直接部署到
-EdgeOne Pages（腾讯云国际版，免备案）的 dist/ 目录。
+EdgeOne Pages（腾讯云国际版，免备案）或 Cloudflare Pages（免费、免备案、国内可公开访问）
+的 dist/ 目录。两套响应头配置（edgeone.json / _headers）一并拷入 dist/，互不影响。
 
 用法：
     python build_standalone.py
@@ -33,8 +34,9 @@ DIST = os.path.join(BASE, 'dist')
 CSS_FILES = ['styles.css']
 JS_FILES = ['data.js', 'app.js', 'intro.js', 'ions.js', 'fx.js']
 # 部署脚手架：随打包一起拷进 dist/，使 dist/ 成为可直接部署的目录
+# 同时兼容 EdgeOne（edgeone.json）与 Cloudflare Pages（_headers），各自忽略对方格式
 SCAFFOLD = [
-    'llms.txt', 'robots.txt', 'sitemap.xml', 'edgeone.json',
+    'llms.txt', 'robots.txt', 'sitemap.xml', 'edgeone.json', '_headers',
     'baidu_verify_codeva-khjd5i8M5L.html',
 ]
 

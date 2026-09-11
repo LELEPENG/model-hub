@@ -35,6 +35,11 @@ JS_FILES = ['data.js', 'app.js', 'intro.js', 'ions.js', 'fx.js']
 # 部署脚手架：随打包一起拷进 dist/，使 dist/ 成为可直接部署的目录
 SCAFFOLD = ['llms.txt', 'robots.txt', 'sitemap.xml', 'edgeone.json']
 
+# 搜索引擎站点所有权验证标签（按平台要求填入，会自动注入 <head>）
+VERIFY_META_TAGS = [
+    '<meta name="baidu-site-verification" content="codeva-TgpH2v8bf3" />',
+]
+
 
 def read(name):
     with io.open(os.path.join(BASE, name), encoding='utf-8') as f:
@@ -159,10 +164,13 @@ def main():
     if n_css == 0:
         sys.exit('[X] 没找到 styles.css 的 link 标签，打包中止')
 
-    # 4. 结构化数据 JSON-LD（基于 data.js 的 TOP50，注入 <head>）
+    # 4. 搜索引擎站点验证标签 + 结构化数据 JSON-LD（均注入 <head>）
+    head_inject = []
+    if VERIFY_META_TAGS:
+        head_inject.extend(VERIFY_META_TAGS)
     items = extract_top50(read('data.js'))
     if items:
-        html = html.replace('</head>', make_jsonld(items) + '\n</head>', 1)
+        head_inject.append(make_jsonld(items))
         # 5. <noscript> 纯文本榜单兜底，注入到空的 #view 容器内
         noscript = make_noscript(items)
         html, n_ns = re.subn(r'(<div id="view"[^>]*>)\s*</div>',
@@ -171,6 +179,8 @@ def main():
             print('[!] 未找到空的 #view 容器，noscript 兜底未注入（不影响主流程）')
     else:
         print('[!] 未解析到 TOP50，跳过 JSON-LD / noscript 注入')
+    if head_inject:
+        html = html.replace('</head>', '\n'.join(head_inject) + '\n</head>', 1)
 
     # 6. 资料库 / 静态托管平台需要的根标记
     html = html.replace('<html lang="zh-CN"', '<html lang="zh-CN" data-sp-mode="scroll"', 1)

@@ -1,0 +1,4245 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-sp-mode="scroll" data-page-node-id="2JI7S7ZCV4rxFtzSoVi6UB">
+<head data-page-node-id="IixEHrih6Kou1COAdKVABV">
+<meta charset="UTF-8" data-page-node-id="iscEQJnRvoIbZweMS09L96">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="Eq1xoAUJogZIZhsx2k696U">
+<title>大模型一站式接入指南 · 按你的电脑选模型 + API 接入教程</title>
+<meta name="description" content="输入你的显卡/内存，告诉你该装哪 1-2 个本地大模型；再教你怎么把 GPT-6 Astra、Claude Opus 5 这些最强模型和免费 API 接进你的软件。" data-page-node-id="IM3FO39ItWPUqpyrSvQONG">
+<style>
+/* ============================================================
+   model-hub / styles.css
+   深色工业仪表盘主题 —— 与 model-hub.html 同一套设计令牌
+   蓝(主) / 青(辅) / 琥珀(警示) / 紫(新增) / 红(坑)
+   ★ 保留全部原有类名，app.js 无需改动即可继续工作
+   ============================================================ */
+
+/* ---------- 设计令牌 ---------- */
+:root {
+  /* 底色层级 */
+  --bg: #07080a;
+  --bg-1: #0f1218;
+  --bg-2: #141922;
+  --bg-3: #1a2029;
+  --line: rgba(255, 255, 255, .09);
+  --line-soft: rgba(255, 255, 255, .055);
+  --line-2: rgba(255, 255, 255, .16);
+
+  /* 文本 */
+  --txt: #eef1f6;
+  --txt-2: #98a2b3;
+  --txt-3: #6b7480;
+
+  /* 强调色 */
+  --accent: #6b8afd;
+  --accent-soft: rgba(107, 138, 253, .14);
+  --teal: #34d3c4;
+  --teal-soft: rgba(52, 211, 196, .12);
+  --amber: #f5a524;
+  --amber-dim: #b8791a;
+  --amber-soft: rgba(245, 165, 36, .12);
+  --violet: #a78bfa;
+  --violet-soft: rgba(167, 139, 250, .13);
+  --red: #f2685f;
+  --red-soft: rgba(242, 104, 95, .12);
+  --green: #34d3c4;
+  --blue: #6b8afd;
+
+  /* 形状 */
+  --radius: 14px;
+  --radius-sm: 9px;
+  --radius-lg: 20px;
+  --shadow: 0 18px 44px rgba(0, 0, 0, .5);
+
+  /* 字体 */
+  --d: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --mono: ui-monospace, "JetBrains Mono", SFMono-Regular, Consolas, "Courier New", monospace;
+
+  /* 动效 */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: 'Noto Sans SC', 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 14.5px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ---------- 氛围层：漂移光球 + 网格 ---------- */
+.bg-orbs { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.bg-orbs .orb { position: absolute; border-radius: 50%; filter: blur(90px); opacity: .2; will-change: transform; }
+.bg-orbs .o1 { width: 520px; height: 520px; left: -150px; top: -130px; background: #3d5bd9; animation: drift1 22s ease-in-out infinite; }
+.bg-orbs .o2 { width: 460px; height: 460px; right: -130px; top: 6%; background: #1d9c92; animation: drift2 27s ease-in-out infinite; }
+.bg-orbs .o3 { width: 430px; height: 430px; left: 36%; bottom: -190px; background: #8a5cf6; animation: drift3 31s ease-in-out infinite; }
+@keyframes drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(70px,80px) scale(1.12); } }
+@keyframes drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-80px,60px) scale(1.08); } }
+@keyframes drift3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(50px,-70px) scale(1.14); } }
+
+.grid-lines {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .32;
+  background-image: linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 90% 60% at 50% 16%, #000 28%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 16%, #000 28%, transparent 78%);
+}
+
+/* ---------- 离子场（Canvas 等离子背景） ---------- */
+.ion-bg {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  display: block; width: 100%; height: 100%;
+  mix-blend-mode: screen;          /* 在近黑底上读作「发光」而非「贴图」 */
+  opacity: 0;                      /* 就绪后由 JS 淡入，避免首帧闪白 */
+  transition: opacity 1.1s var(--ease);
+}
+.ion-bg.ready { opacity: .92; }
+
+/* 引导页专用离子场：压在遮罩之上、卡片之下 */
+.ion-intro {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  display: block; width: 100%; height: 100%;
+  mix-blend-mode: screen;
+}
+
+/* ---------- 颗粒感：给平涂背景加一层物理质地 ---------- */
+.grain {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .045;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- 顶部滚动进度 ---------- */
+.progress {
+  position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 400;
+  background: linear-gradient(90deg, var(--accent), var(--violet), var(--teal));
+  box-shadow: 0 0 14px rgba(107, 138, 253, .6);
+  transition: width .09s linear;
+}
+
+/* 页面内容抬到氛围层之上 */
+header.site, main, footer.site { position: relative; z-index: 1; }
+
+/* ---------- 布局 ---------- */
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+header.site {
+  border-bottom: 1px solid var(--line);
+  background: rgba(7, 8, 10, .82);
+  backdrop-filter: blur(16px);
+  position: sticky; top: 0; z-index: 300;
+}
+header.site .wrap {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 62px; gap: 16px;
+}
+.logo { display: flex; align-items: center; gap: 11px; font-family: var(--d); font-size: 16px; font-weight: 700; letter-spacing: -.01em; }
+.logo .mark {
+  width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto;
+  background: linear-gradient(135deg, var(--accent), var(--violet));
+  display: grid; place-items: center; font-size: 14px; color: #0a0c10;
+  box-shadow: 0 6px 18px rgba(107, 138, 253, .34);
+}
+.logo .live {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--teal); flex: 0 0 auto;
+  animation: pulse 1.9s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52,211,196,.55); }
+  50% { opacity: .6; box-shadow: 0 0 0 6px rgba(52,211,196,0); }
+}
+.logo small { color: var(--txt-3); font-weight: 400; font-size: 12px; margin-left: 3px; font-family: 'Noto Sans SC', sans-serif; }
+
+nav.tabs { display: flex; gap: 3px; overflow-x: auto; scrollbar-width: none; }
+nav.tabs::-webkit-scrollbar { display: none; }
+nav.tabs button {
+  background: none; border: 1px solid transparent; color: var(--txt-2);
+  padding: 7px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  font-size: 13px; font-family: var(--d); font-weight: 600;
+  transition: .28s var(--ease); min-height: 36px;
+}
+nav.tabs button:hover { background: var(--bg-2); border-color: var(--line); color: var(--txt); transform: translateY(-1px); }
+nav.tabs button.on {
+  background: var(--accent); border-color: var(--accent); color: #0a0c10;
+  box-shadow: 0 5px 18px rgba(107, 138, 253, .32);
+}
+
+main { padding: 8px 0 80px; min-height: 60vh; }
+
+/* ---------- Hero ---------- */
+.hero { padding: 54px 0 30px; border-bottom: 1px solid var(--line-soft); margin-bottom: 26px; }
+.hero h1 {
+  font-family: var(--d); font-size: clamp(28px, 4.4vw, 46px); font-weight: 800;
+  letter-spacing: -.025em; line-height: 1.12; margin-bottom: 14px;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(100deg, var(--accent) 0%, var(--violet) 45%, var(--teal) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shimmer 7s ease-in-out infinite;
+}
+@keyframes shimmer { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+.hero p { color: var(--txt-2); max-width: 760px; font-size: 15px; }
+.hero .meta { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------- 跑马灯 ---------- */
+.ticker {
+  margin: 20px 0 0; border: 1px solid var(--line); border-radius: 999px;
+  overflow: hidden; background: rgba(255, 255, 255, .02); padding: 9px 0; position: relative;
+}
+.ticker::before, .ticker::after { content: ""; position: absolute; top: 0; bottom: 0; width: 70px; z-index: 2; pointer-events: none; }
+.ticker::before { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
+.ticker::after { right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
+.ticker-track { display: flex; gap: 34px; width: max-content; animation: marquee 40s linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+.ticker span {
+  font-family: var(--mono); font-size: 12.5px; color: var(--txt-3);
+  white-space: nowrap; display: flex; align-items: center; gap: 9px;
+}
+.ticker span::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ---------- 标签 ---------- */
+.tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; padding: 3px 9px; border-radius: 999px;
+  background: var(--bg-3); color: var(--txt-2); border: 1px solid var(--line);
+  white-space: nowrap; font-family: var(--d); font-weight: 600; letter-spacing: .02em;
+}
+.tag.free, .tag.verified { color: #8ff0e6; border-color: rgba(52,211,196,.3); background: var(--teal-soft); }
+.tag.paid, .tag.untested { color: #ffd28a; border-color: rgba(245,165,36,.3); background: var(--amber-soft); }
+.tag.freemium, .tag.fremium, .tag.community { color: #a8bcff; border-color: rgba(107,138,253,.3); background: var(--accent-soft); }
+
+/* ---------- 卡片基类 ---------- */
+.card {
+  background: linear-gradient(160deg, var(--bg-1), rgba(15, 18, 24, .5));
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 18px;
+  transition: .42s var(--ease);
+}
+.card.click { cursor: pointer; }
+.card.click:hover {
+  border-color: var(--line-2); background: var(--bg-2);
+  transform: translateY(-4px); box-shadow: 0 16px 36px rgba(0, 0, 0, .42);
+}
+
+.sec-title {
+  font-family: var(--d); font-size: 11.5px; text-transform: uppercase; letter-spacing: .16em;
+  color: var(--txt-3); margin: 30px 0 14px; font-weight: 700;
+  display: flex; align-items: center; gap: 10px;
+}
+.sec-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+/* ---------- 档位选择 ---------- */
+.tier-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px, 1fr)); gap: 13px; }
+.tier-card { display: flex; flex-direction: column; gap: 7px; position: relative; overflow: hidden; }
+.tier-card::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+  background: var(--accent); transform: scaleY(0); transform-origin: top; transition: transform .42s var(--ease);
+}
+.tier-card.click:hover::before { transform: scaleY(1); }
+.tier-card .top { display: flex; align-items: center; gap: 10px; }
+.tier-card .ic { font-size: 20px; }
+.tier-card .nm { font-family: var(--d); font-weight: 700; font-size: 15.5px; }
+.tier-card .hint { color: var(--txt-3); font-size: 12.5px; }
+.tier-card.star {
+  border-color: rgba(245, 165, 36, .42);
+  background: linear-gradient(165deg, rgba(245,165,36,.09), var(--bg-1) 62%);
+  box-shadow: 0 0 0 1px rgba(245,165,36,.12), 0 14px 34px rgba(0,0,0,.4);
+}
+.tier-card.star::before { background: var(--amber); transform: scaleY(1); }
+
+/* ---------- 推荐结果 ---------- */
+.pick-box {
+  background: linear-gradient(150deg, rgba(107,138,253,.07) 0%, var(--bg-1) 55%);
+  border: 1px solid rgba(107, 138, 253, .3); border-radius: var(--radius-lg);
+  padding: 24px; margin-top: 18px;
+}
+.pick-box .rule {
+  font-size: 13.5px; color: #c9f5ef; background: var(--teal-soft);
+  border-left: 2px solid var(--teal); padding: 11px 15px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 12px 0;
+}
+.pick-box .note { font-size: 13.5px; color: var(--txt-2); margin-bottom: 16px; }
+.pick-list { display: grid; gap: 13px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+/* ---------- 模型卡 ---------- */
+.m-card { display: flex; flex-direction: column; gap: 9px; }
+.m-card .hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.m-card .nm { font-family: var(--d); font-weight: 700; font-size: 16px; letter-spacing: -.01em; transition: color .3s var(--ease); }
+.m-card.click:hover .nm { color: var(--accent); }
+.m-card .vd { font-size: 12.5px; color: var(--txt-3); }
+.m-card .one { font-size: 13.5px; color: var(--txt-2); line-height: 1.6; }
+.m-card .kv { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--txt-3); margin-top: 3px; font-family: var(--mono); }
+.m-card .kv b { color: var(--txt-2); font-weight: 600; font-family: 'Noto Sans SC', sans-serif; }
+.m-card .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+
+/* ---------- 筛选 ---------- */
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.filters input[type=text] {
+  flex: 1; min-width: 210px; background: var(--bg-2); border: 1px solid var(--line);
+  color: var(--txt); padding: 9px 14px; border-radius: 999px;
+  font-family: inherit; font-size: 13px; outline: none; transition: .3s var(--ease); min-height: 38px;
+}
+.filters input[type=text]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.chip {
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--txt-2);
+  padding: 7px 14px; border-radius: 999px; font-size: 12.5px; cursor: pointer;
+  font-family: var(--d); font-weight: 600; transition: .28s var(--ease); min-height: 36px;
+}
+.chip:hover { border-color: var(--line-2); color: var(--txt); transform: translateY(-2px); }
+.chip.on { background: var(--accent); border-color: var(--accent); color: #0a0c10; box-shadow: 0 4px 14px rgba(107,138,253,.3); }
+
+/* ---------- 详情抽屉 ---------- */
+.overlay {
+  position: fixed; inset: 0; background: rgba(4, 5, 7, .72);
+  backdrop-filter: blur(4px); z-index: 200; display: none;
+}
+.overlay.on { display: block; animation: fadeIn .3s var(--ease); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(720px, 96vw);
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border-left: 1px solid var(--line-2);
+  z-index: 201; overflow-y: auto; transform: translateX(100%);
+  transition: transform .42s var(--ease); box-shadow: var(--shadow);
+}
+.panel.on { transform: translateX(0); }
+.panel-hd {
+  position: sticky; top: 0; background: rgba(15, 18, 24, .94); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line); padding: 22px 26px; z-index: 2;
+}
+.panel-hd .nm { font-family: var(--d); font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+.panel-hd .vd { color: var(--txt-3); font-size: 13px; margin-top: 3px; }
+.panel-hd .close {
+  position: absolute; top: 18px; right: 20px; background: var(--bg-3);
+  border: 1px solid var(--line); color: var(--txt-2); width: 34px; height: 34px;
+  border-radius: 10px; cursor: pointer; font-size: 15px; line-height: 1;
+  transition: .28s var(--ease);
+}
+.panel-hd .close:hover { color: #0a0c10; background: var(--accent); border-color: var(--accent); transform: rotate(90deg); }
+.panel-bd { padding: 24px 26px; }
+
+.blk { margin-bottom: 28px; }
+.blk h3 {
+  font-family: var(--d); font-size: 11.5px; text-transform: uppercase; letter-spacing: .16em;
+  color: var(--accent); margin-bottom: 12px; font-weight: 700;
+}
+.blk p { color: var(--txt-2); font-size: 13.5px; margin-bottom: 9px; }
+
+pre {
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 13px 15px; overflow-x: auto; margin: 9px 0;
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.75; color: #a8dcd6;
+  position: relative;
+}
+pre code { font-family: var(--mono); }
+pre .cp {
+  position: absolute; top: 7px; right: 7px; background: var(--bg-3);
+  border: 1px solid var(--line); color: var(--txt-3); font-size: 11px;
+  padding: 3px 9px; border-radius: 6px; cursor: pointer; font-family: var(--d); font-weight: 600;
+  transition: .26s var(--ease);
+}
+pre .cp:hover { color: #0a0c10; background: var(--teal); border-color: var(--teal); }
+
+table.kv-t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.kv-t td { padding: 9px 0; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+table.kv-t td:first-child { color: var(--txt-3); width: 116px; white-space: nowrap; }
+table.kv-t td:last-child { color: var(--txt); }
+table.kv-t code, .blk code {
+  font-family: var(--mono); font-size: 12.5px; color: var(--teal);
+  background: var(--bg-3); padding: 2px 7px; border-radius: 5px;
+}
+
+ul.pit { list-style: none; }
+ul.pit li {
+  color: var(--txt-2); font-size: 13.5px; padding: 10px 0 10px 20px;
+  position: relative; border-bottom: 1px solid var(--line-soft);
+  transition: .3s var(--ease);
+}
+ul.pit li:hover { color: var(--txt); }
+ul.pit li::before { content: '!'; position: absolute; left: 0; top: 10px; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--red); color: #2b0b08; font-size: 10px; font-weight: 800;
+  display: grid; place-items: center; font-family: var(--d);
+}
+
+/* ---------- 实验室 ---------- */
+.lab-intro {
+  background: var(--violet-soft); border: 1px dashed rgba(167, 139, 250, .38);
+  border-radius: var(--radius); padding: 18px 20px; margin-bottom: 24px;
+  font-size: 13.5px; color: #ddd3ff; line-height: 1.75;
+}
+.lab-intro b { color: #c4b5fd; }
+
+.form-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px; }
+.form-row label { font-size: 12px; color: var(--txt-3); font-family: var(--d); font-weight: 600; letter-spacing: .04em; }
+.form-row input, .form-row select, .form-row textarea {
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--txt);
+  padding: 10px 13px; border-radius: var(--radius-sm); font-family: inherit;
+  font-size: 13.5px; outline: none; width: 100%; transition: .3s var(--ease); min-height: 42px;
+}
+.form-row textarea { min-height: 96px; resize: vertical; line-height: 1.7; }
+.form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.btn {
+  background: var(--accent); color: #0a0c10; border: 1px solid var(--accent);
+  padding: 10px 20px; border-radius: var(--radius-sm); font-weight: 700;
+  font-size: 13px; cursor: pointer; font-family: var(--d);
+  transition: .3s var(--ease); min-height: 42px;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(107, 138, 253, .34); }
+.btn.ghost { background: transparent; color: var(--txt-2); border: 1px solid var(--line); }
+.btn.ghost:hover { color: var(--txt); border-color: var(--line-2); background: var(--bg-2); }
+.btn.sm { padding: 7px 14px; font-size: 12.5px; min-height: 36px; }
+
+.ticket {
+  background: linear-gradient(160deg, var(--bg-1), rgba(15, 18, 24, .5));
+  border: 1px solid var(--line); border-left: 3px solid var(--amber);
+  border-radius: var(--radius-sm); padding: 15px 17px; margin-bottom: 11px;
+  transition: .34s var(--ease);
+}
+.ticket:hover { transform: translateX(3px); border-color: var(--line-2); }
+.ticket .t-hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.ticket .t-t { font-family: var(--d); font-weight: 700; font-size: 14.5px; }
+.ticket .t-m { font-size: 11.5px; color: var(--txt-3); margin-top: 4px; font-family: var(--mono); }
+.ticket .t-b { color: var(--txt-2); font-size: 13.5px; margin-top: 9px; white-space: pre-wrap; }
+.ticket .reply {
+  background: var(--teal-soft); border-radius: var(--radius-sm); padding: 11px 13px;
+  margin-top: 11px; font-size: 13.5px; border-left: 2px solid var(--teal); color: #c9f5ef;
+}
+.ticket .reply .rh { font-size: 11.5px; color: #8ff0e6; margin-bottom: 5px; font-family: var(--d); font-weight: 700; }
+.ticket .acts { display: flex; gap: 6px; margin-top: 11px; flex-wrap: wrap; }
+
+.badge { font-size: 11px; padding: 3px 9px; border-radius: 999px; font-weight: 700; white-space: nowrap; font-family: var(--d); }
+
+/* ---------- 空状态 ---------- */
+.empty {
+  text-align: center; padding: 60px 20px; color: var(--txt-3);
+  border: 1px dashed var(--line); border-radius: var(--radius-lg); margin-top: 6px;
+  background: rgba(255, 255, 255, .012);
+}
+.empty .ic { font-size: 36px; margin-bottom: 12px; opacity: .65; }
+.empty p { font-size: 13.5px; }
+
+/* ---------- 新手 6 步 ---------- */
+.step { display: flex; gap: 15px; margin-bottom: 6px; position: relative; }
+.step:not(:last-child)::before {
+  content: ""; position: absolute; left: 14px; top: 34px; bottom: -6px; width: 1px;
+  background: linear-gradient(180deg, rgba(107,138,253,.5), rgba(107,138,253,.06));
+}
+.step .n {
+  flex-shrink: 0; width: 29px; height: 29px; border-radius: 50%;
+  background: var(--bg-3); border: 1px solid var(--accent); color: var(--accent);
+  display: grid; place-items: center; font-size: 12.5px; font-weight: 700;
+  font-family: var(--d); transition: .34s var(--ease);
+}
+.step:hover .n { background: var(--accent); color: #0a0c10; transform: scale(1.12); }
+.step .t { font-family: var(--d); font-weight: 700; font-size: 15px; margin-bottom: 5px; }
+.step .b { color: var(--txt-2); font-size: 13.5px; white-space: pre-wrap; }
+
+footer.site { border-top: 1px solid var(--line); padding: 26px 0; color: var(--txt-3); font-size: 12.5px; }
+footer.site a { color: var(--teal); text-decoration: none; border-bottom: 1px dashed rgba(52,211,196,.4); }
+footer.site a:hover { color: #8ff0e6; }
+
+.toast {
+  position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--bg-3); border: 1px solid rgba(52, 211, 196, .34); color: var(--txt);
+  padding: 11px 22px; border-radius: 999px; font-size: 13.5px; z-index: 500;
+  opacity: 0; transition: .34s var(--ease); pointer-events: none;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, .5);
+}
+.toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- 回顶按钮 ---------- */
+#backTop {
+  position: fixed; right: 22px; bottom: 22px; z-index: 350;
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 1px solid var(--line-2); background: rgba(15, 18, 24, .93); color: var(--txt-2);
+  cursor: pointer; font-size: 17px; opacity: 0; pointer-events: none;
+  transition: .34s var(--ease); backdrop-filter: blur(8px); display: grid; place-items: center;
+}
+#backTop.show { opacity: 1; pointer-events: auto; }
+#backTop:hover { background: var(--accent); color: #0a0c10; border-color: var(--accent); transform: translateY(-3px); }
+#backTop svg { position: absolute; inset: -1px; transform: rotate(-90deg); }
+#backTop .ring { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 138; stroke-dashoffset: 138; transition: stroke-dashoffset .1s linear; }
+
+/* ---------- 入场动画 ---------- */
+.rv { opacity: 0; transform: translateY(24px); transition: opacity .68s var(--ease), transform .68s var(--ease); }
+.rv.in { opacity: 1; transform: none; }
+/* 视图切换 */
+#view.swap { animation: viewIn .5s var(--ease) both; }
+@keyframes viewIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* 焦点可见 */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px;
+}
+::selection { background: rgba(107, 138, 253, .35); }
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 720px) {
+  .wrap { padding: 0 16px; }
+  header.site .wrap { height: auto; padding: 11px 16px; flex-wrap: wrap; gap: 10px; }
+  nav.tabs { width: 100%; }
+  .hero { padding: 34px 0 24px; }
+  .pick-box { padding: 18px; }
+  .panel-bd, .panel-hd { padding-left: 18px; padding-right: 18px; }
+}
+
+/* ============================================================
+   全球 Top50 排行榜
+   ============================================================ */
+.rank-tools { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 4px; }
+
+.rank-list { display: flex; flex-direction: column; gap: 9px; margin-top: 16px; }
+
+.rank-row {
+  position: relative; display: grid;
+  grid-template-columns: 58px 1fr 150px 22px;
+  align-items: center; gap: 16px;
+  padding: 15px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
+  overflow: hidden;
+  transition: transform .38s var(--ease), border-color .3s var(--ease), box-shadow .38s var(--ease), background .3s var(--ease);
+}
+.rank-row::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--ac); opacity: .55; transition: opacity .3s var(--ease), width .3s var(--ease);
+}
+.rank-row::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(420px 140px at 0% 50%, color-mix(in srgb, var(--ac) 16%, transparent), transparent 70%);
+  opacity: 0; transition: opacity .38s var(--ease);
+}
+.rank-row:hover {
+  transform: translateX(6px);
+  border-color: color-mix(in srgb, var(--ac) 55%, var(--line));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .45);
+}
+.rank-row:hover::before { opacity: 1; width: 5px; }
+.rank-row:hover::after { opacity: 1; }
+.rank-row:hover .rgo { transform: translateX(4px); color: var(--ac); }
+
+.rank-row .rk {
+  font-family: var(--d); font-size: 30px; font-weight: 800; line-height: 1;
+  color: var(--txt-3); font-variant-numeric: tabular-nums; text-align: center;
+  transition: color .3s var(--ease), transform .38s var(--ease);
+}
+.rank-row.top1 .rk { color: #f5c451; text-shadow: 0 0 22px rgba(245, 196, 81, .5); }
+.rank-row.top2 .rk { color: #cfd6e3; text-shadow: 0 0 18px rgba(207, 214, 227, .35); }
+.rank-row.top3 .rk { color: #cd8b52; text-shadow: 0 0 18px rgba(205, 139, 82, .35); }
+.rank-row.top1 { border-color: rgba(245, 196, 81, .34); background: linear-gradient(180deg, #191510, var(--bg-2)); }
+.rank-row:hover .rk { transform: scale(1.08); }
+
+.rank-row .rbody { min-width: 0; }
+.rank-row .rhd { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+.rank-row .rnm {
+  font-family: var(--d); font-size: 17px; font-weight: 700; letter-spacing: -.2px;
+}
+.rank-row .rvd { font-size: 11.5px; color: var(--txt-3); }
+.rank-row .rone {
+  margin-top: 5px; font-size: 13px; color: var(--txt-2); line-height: 1.6;
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.rank-row .rtags { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+.rank-row .rscore { text-align: right; }
+.rank-row .sn {
+  font-family: var(--mono); font-size: 21px; font-weight: 600; line-height: 1;
+  font-variant-numeric: tabular-nums; color: var(--txt);
+}
+.rank-row .sbar {
+  margin-top: 7px; height: 4px; border-radius: 99px;
+  background: rgba(255, 255, 255, .07); overflow: hidden;
+}
+.rank-row .sbar i { display: block; height: 100%; border-radius: 99px; transition: width 1.1s var(--ease); }
+.rank-row .sl { margin-top: 5px; font-size: 10px; color: var(--txt-3); letter-spacing: .12em; }
+
+.rank-row .rgo {
+  font-size: 22px; color: var(--txt-3); text-align: center; line-height: 1;
+  transition: transform .3s var(--ease), color .3s var(--ease);
+}
+
+/* 详情面板里的分数条 / 优势列表 */
+.sbar.big { height: 9px; border-radius: 99px; background: rgba(255, 255, 255, .07); overflow: hidden; }
+.sbar.big i { display: block; height: 100%; border-radius: 99px; transition: width 1.1s var(--ease); }
+.rk-big { font-family: var(--d); font-size: 46px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+ul.pros { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+ul.pros li {
+  position: relative; padding-left: 22px; font-size: 13.5px; line-height: 1.7; color: var(--txt-2);
+}
+ul.pros li::before {
+  content: '▲'; position: absolute; left: 0; top: 1px; font-size: 9px; color: var(--teal);
+}
+.blk.avoid { border-left: 2px solid var(--red); padding-left: 14px; }
+.blk.avoid h3 { color: var(--red); }
+
+/* ============================================================
+   首屏引导：3D 模块化叠卡
+   ============================================================ */
+html.intro-lock, html.intro-lock body { overflow: hidden; }
+
+.intro {
+  position: fixed; inset: 0; z-index: 900;
+  display: grid; place-items: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .5s var(--ease);
+}
+.intro.on { opacity: 1; pointer-events: auto; }
+
+.intro-veil {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(900px 620px at 50% 34%, rgba(107, 138, 253, .16), transparent 62%),
+    radial-gradient(700px 520px at 82% 78%, rgba(167, 139, 250, .13), transparent 60%),
+    radial-gradient(700px 520px at 14% 80%, rgba(52, 211, 196, .11), transparent 60%),
+    rgba(5, 6, 9, .93);
+  backdrop-filter: blur(16px) saturate(120%);
+}
+.intro-veil::after {
+  content: ''; position: absolute; inset: 0; opacity: .5;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(720px 520px at 50% 45%, #000 15%, transparent 78%);
+  -webkit-mask-image: radial-gradient(720px 520px at 50% 45%, #000 15%, transparent 78%);
+}
+
+.intro-inner {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 22px; padding: 30px 20px; width: 100%; max-width: 980px;
+}
+
+.intro-head { text-align: center; animation: introUp .7s var(--ease) both; }
+.intro-head .brand {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--d); font-size: 12px; font-weight: 600; letter-spacing: .16em;
+  color: var(--txt-3); text-transform: uppercase;
+}
+.intro-head .mark { color: var(--accent); font-size: 14px; }
+.intro-head h2 {
+  font-family: var(--d); font-size: clamp(26px, 4.4vw, 42px); font-weight: 800;
+  letter-spacing: -.9px; margin-top: 10px; line-height: 1.15;
+  background: linear-gradient(96deg, #fff 12%, var(--accent) 48%, var(--violet) 86%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.intro-head p { margin-top: 8px; font-size: 13.5px; color: var(--txt-2); }
+@keyframes introUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+/* 叠卡舞台 */
+.deck {
+  --rx: 0deg; --ry: 0deg; --ac: #6b8afd;
+  position: relative; width: 100%; max-width: 430px; height: 268px;
+  perspective: 1300px; transform-style: preserve-3d;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform .5s var(--ease);
+  animation: introDeck .8s var(--ease) both .1s;
+}
+@keyframes introDeck { from { opacity: 0; transform: translateY(30px) scale(.94); } to { opacity: 1; } }
+
+/* 卡片背后的电离辉光，颜色跟着当前卡片的强调色走 */
+.deck::before {
+  content: ''; position: absolute; left: 50%; top: 52%;
+  width: 460px; height: 330px; transform: translate(-50%, -50%);
+  pointer-events: none;
+  background: radial-gradient(ellipse at center,
+    color-mix(in srgb, var(--ac) 30%, transparent), transparent 68%);
+  transition: background .8s var(--ease);
+  animation: deckGlow 5.5s ease-in-out infinite;
+}
+@keyframes deckGlow {
+  0%, 100% { opacity: .55; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: .95; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+.icard {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 26px 26px 22px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(165deg, var(--bg-2) 0%, var(--bg-1) 58%, #0b0e13 100%);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, .62);
+  cursor: pointer; overflow: hidden;
+  transform-style: preserve-3d; will-change: transform, opacity;
+  transition: transform .72s var(--ease), opacity .55s var(--ease), box-shadow .5s var(--ease), border-color .4s var(--ease);
+}
+.icard::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--ac) 22%, transparent), transparent 46%);
+  opacity: .5;
+}
+.icard::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--ac), transparent);
+  opacity: .9;
+}
+.ic-glow {
+  position: absolute; width: 240px; height: 240px; right: -80px; top: -110px;
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ac) 40%, transparent), transparent 66%);
+  opacity: .45; transition: opacity .5s var(--ease), transform .7s var(--ease);
+}
+.icard.front {
+  border-color: color-mix(in srgb, var(--ac) 52%, var(--line-2));
+  box-shadow: 0 42px 92px rgba(0, 0, 0, .72), 0 0 60px color-mix(in srgb, var(--ac) 16%, transparent);
+}
+.icard.front .ic-glow { opacity: .8; transform: scale(1.15); }
+.icard:not(.front) {
+  box-shadow: 0 20px 46px rgba(0, 0, 0, .55);
+  border-color: color-mix(in srgb, var(--ac) 34%, var(--line-2));
+  background: linear-gradient(165deg, var(--bg-3) 0%, var(--bg-1) 62%, #0b0e13 100%);
+}
+.icard:not(.front) .ic-desc,
+.icard:not(.front) .ic-title { opacity: .82; }
+.icard:not(.front):hover { border-color: color-mix(in srgb, var(--ac) 40%, var(--line-2)); }
+
+.ic-top { display: flex; align-items: center; gap: 11px; }
+.ic-ic {
+  width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+  font-size: 21px; background: color-mix(in srgb, var(--ac) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ac) 34%, transparent);
+}
+.ic-tag {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .16em; padding: 4px 9px;
+  border-radius: 99px; color: var(--ac);
+  background: color-mix(in srgb, var(--ac) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ac) 30%, transparent);
+}
+.ic-title { font-family: var(--d); font-size: 24px; font-weight: 700; letter-spacing: -.5px; margin-top: 4px; }
+.ic-desc { font-size: 13.5px; line-height: 1.75; color: var(--txt-2); flex: 1; }
+.ic-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 12px; border-top: 1px solid var(--line-soft);
+}
+.ic-cta {
+  font-family: var(--d); font-size: 13.5px; font-weight: 600; color: var(--ac);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.ic-cta i { font-style: normal; transition: transform .34s var(--ease); }
+.icard.front:hover .ic-cta i { transform: translateX(5px); }
+.ic-num { font-family: var(--mono); font-size: 11px; color: var(--txt-3); letter-spacing: .1em; }
+
+/* 控制条 */
+.intro-ctl { display: flex; align-items: center; gap: 16px; animation: introUp .7s var(--ease) both .25s; }
+.inav {
+  width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--line-2); background: rgba(20, 25, 34, .8); color: var(--txt-2);
+  font-size: 20px; line-height: 1; display: grid; place-items: center;
+  transition: .3s var(--ease);
+}
+.inav:hover { background: var(--accent); color: #0a0c10; border-color: var(--accent); transform: scale(1.08); }
+.dots { display: flex; gap: 8px; }
+.dot {
+  width: 8px; height: 8px; border-radius: 99px; padding: 0; cursor: pointer;
+  background: rgba(255, 255, 255, .18); border: 0; transition: .34s var(--ease);
+}
+.dot:hover { background: rgba(255, 255, 255, .4); }
+.dot.on { background: var(--accent); width: 26px; box-shadow: 0 0 14px rgba(107, 138, 253, .6); }
+
+.iskip {
+  background: none; border: 0; cursor: pointer; color: var(--txt-3);
+  font-family: inherit; font-size: 12.5px; padding: 8px 12px; border-radius: 8px;
+  transition: .3s var(--ease); animation: introUp .7s var(--ease) both .34s;
+}
+.iskip:hover { color: var(--txt); background: rgba(255, 255, 255, .05); }
+
+/* 浮动按钮组 */
+.float-stack {
+  position: fixed; right: 22px; bottom: 22px; z-index: 360;
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+}
+/* backTop 原本自己是 fixed，进栈后改为相对定位 */
+.float-stack #backTop { position: relative; right: auto; bottom: auto; }
+#reIntro {
+  width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--line-2); background: rgba(15, 18, 24, .93); color: var(--txt-2);
+  backdrop-filter: blur(8px); display: grid; place-items: center;
+  font-size: 15px; transition: .34s var(--ease);
+}
+#reIntro span {
+  position: absolute; right: 56px; white-space: nowrap;
+  font-size: 11.5px; padding: 4px 9px; border-radius: 7px;
+  background: rgba(15, 18, 24, .96); border: 1px solid var(--line);
+  opacity: 0; transform: translateX(6px); pointer-events: none; transition: .3s var(--ease);
+}
+#reIntro { position: relative; }
+#reIntro:hover { background: var(--violet); color: #0a0c10; border-color: var(--violet); transform: translateY(-3px); }
+#reIntro:hover span { opacity: 1; transform: none; }
+
+/* ---------- 响应式：排行榜 + 引导 ---------- */
+@media (max-width: 860px) {
+  .rank-row { grid-template-columns: 44px 1fr 22px; row-gap: 10px; }
+  .rank-row .rscore { grid-column: 2 / 3; text-align: left; display: flex; align-items: center; gap: 10px; }
+  .rank-row .sbar { flex: 1; margin-top: 0; }
+  .rank-row .sl { display: none; }
+}
+@media (max-width: 560px) {
+  .deck { height: 300px; max-width: 320px; }
+  .icard { padding: 20px 20px 18px; }
+  .ic-title { font-size: 20px; }
+  .ic-desc { font-size: 12.5px; line-height: 1.65; }
+  .rank-row { padding: 13px 14px; gap: 12px; }
+  .rank-row .rk { font-size: 24px; }
+  .rank-row .rnm { font-size: 15px; }
+}
+
+/* ---------- 降级：尊重系统减少动效 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  html { scroll-behavior: auto; }
+  .rv { opacity: 1; transform: none; }
+  .deck { perspective: none; }
+}
+
+</style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "ItemList", "name": "全球 Top50 大模型排名（2026.09）", "description": "model-hub 编辑性整理的全球大模型综合排名，数据核实于 2026-09-11，覆盖文本/图像/视频多模态与本地部署/云端 API 场景。", "itemListOrder": "Descending", "numberOfItems": 50, "itemListElement": [{"@type": "ListItem", "position": 1, "name": "GPT-6 Astra（OpenAI）"}, {"@type": "ListItem", "position": 2, "name": "Claude Fable 5.1（Anthropic）"}, {"@type": "ListItem", "position": 3, "name": "Claude Opus 5（Anthropic）"}, {"@type": "ListItem", "position": 4, "name": "GPT-5.6 Sol（OpenAI）"}, {"@type": "ListItem", "position": 5, "name": "Muse Spark 1.3（Meta）"}, {"@type": "ListItem", "position": 6, "name": "Claude Fable 5（Anthropic）"}, {"@type": "ListItem", "position": 7, "name": "Claude Mythos（Anthropic）"}, {"@type": "ListItem", "position": 8, "name": "Kimi K3（Moonshot AI（月之暗面））"}, {"@type": "ListItem", "position": 9, "name": "GLM-5.3（Z.ai（智谱））"}, {"@type": "ListItem", "position": 10, "name": "DeepSeek V4 Pro（DeepSeek）"}, {"@type": "ListItem", "position": 11, "name": "Qwen3.8 Max（阿里巴巴）"}, {"@type": "ListItem", "position": 12, "name": "Hy4 preview（腾讯混元）"}, {"@type": "ListItem", "position": 13, "name": "Gemini 3.8 Flash（Google）"}, {"@type": "ListItem", "position": 14, "name": "Claude Opus 4.8（Anthropic）"}, {"@type": "ListItem", "position": 15, "name": "GLM-5.3 Flash（Z.ai（智谱））"}, {"@type": "ListItem", "position": 16, "name": "GPT-5.6 Terra（OpenAI）"}, {"@type": "ListItem", "position": 17, "name": "Claude Sonnet 5（Anthropic）"}, {"@type": "ListItem", "position": 18, "name": "Grok 4.6（xAI）"}, {"@type": "ListItem", "position": 19, "name": "DeepSeek V4 Flash（DeepSeek）"}, {"@type": "ListItem", "position": 20, "name": "Gemini 3.7 Flash（Google）"}, {"@type": "ListItem", "position": 21, "name": "Llama 4 Maverick（Meta）"}, {"@type": "ListItem", "position": 22, "name": "Qwen3-235B-A22B（阿里巴巴）"}, {"@type": "ListItem", "position": 23, "name": "DeepSeek V3.1（DeepSeek）"}, {"@type": "ListItem", "position": 24, "name": "Grok 4（xAI）"}, {"@type": "ListItem", "position": 25, "name": "Mistral Large 3（Mistral AI）"}, {"@type": "ListItem", "position": 26, "name": "GPT-5.6 mini（OpenAI）"}, {"@type": "ListItem", "position": 27, "name": "Gemini 3 Pro（Google）"}, {"@type": "ListItem", "position": 28, "name": "Claude Haiku 5（Anthropic）"}, {"@type": "ListItem", "position": 29, "name": "文心 5.0（ERNIE 5.0）（百度（文心））"}, {"@type": "ListItem", "position": 30, "name": "Command A（Cohere）"}, {"@type": "ListItem", "position": 31, "name": "MiniMax M3（MiniMax（稀宇））"}, {"@type": "ListItem", "position": 32, "name": "Nemotron Ultra 253B（NVIDIA）"}, {"@type": "ListItem", "position": 33, "name": "Qwen3-Coder（阿里巴巴）"}, {"@type": "ListItem", "position": 34, "name": "豆包 Pro（Doubao）（字节跳动（豆包））"}, {"@type": "ListItem", "position": 35, "name": "Mistral 3（Mistral AI）"}, {"@type": "ListItem", "position": 36, "name": "Gemma 3（27B）（Google）"}, {"@type": "ListItem", "position": 37, "name": "Kimi K2（Moonshot AI（月之暗面））"}, {"@type": "ListItem", "position": 38, "name": "阶跃 Step-3（阶跃星辰）"}, {"@type": "ListItem", "position": 39, "name": "Amazon Nova Pro（Amazon）"}, {"@type": "ListItem", "position": 40, "name": "GPT-5.1（OpenAI）"}, {"@type": "ListItem", "position": 41, "name": "Gemini 3.5 Flash（Google）"}, {"@type": "ListItem", "position": 42, "name": "零一万物 Yi-Large（零一万物）"}, {"@type": "ListItem", "position": 43, "name": "Mistral Codestral（Mistral AI）"}, {"@type": "ListItem", "position": 44, "name": "百川 Baichuan4（百川智能）"}, {"@type": "ListItem", "position": 45, "name": "Claude Opus 4.5（Anthropic）"}, {"@type": "ListItem", "position": 46, "name": "OLMo 2（AllenAI）"}, {"@type": "ListItem", "position": 47, "name": "Perplexity Sonar（Perplexity）"}, {"@type": "ListItem", "position": 48, "name": "Granite 4（IBM）"}, {"@type": "ListItem", "position": 49, "name": "Jamba 2（AI21）"}, {"@type": "ListItem", "position": 50, "name": "Falcon 3（TII）"}]}</script>
+</head>
+<body data-page-node-id="11GwwgHJTlZhbX3RVyaIJj">
+
+<div class="bg-orbs"><span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span></div>
+<div class="grid-lines"></div>
+<canvas id="ionBg" class="ion-bg" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<div class="progress" id="prog"></div>
+
+<header class="site" data-page-node-id="4tFOgDtXuYkcGJG7VddJkB">
+  <div class="wrap" data-page-node-id="DqGFIiUpvTUyAsFwEswTLH">
+    <div class="logo" data-page-node-id="jJUdgbQDtoiSQuM5xkRpuV">
+      <span class="mark" data-page-node-id="0NgvBTprD1TYD9PcxmOffT">◆</span>
+      <span data-page-node-id="ne0iYnvpS7KUJ2h7vF3QEA">大模型接入指南 <small data-page-node-id="5jZqCFYWcUXfIpHdFydmJL">本地部署 + API 一站式</small></span>
+      <span class="live" title="数据持续更新中"></span>
+    </div>
+    <nav class="tabs" data-page-node-id="GkDfMsGvzgtyz5TdPjiycN">
+      <button data-tab="rank" class="on" data-page-node-id="tbRank001xx">🏆 全球 Top50</button>
+      <button data-tab="hw" data-page-node-id="jDQyfR4RIUvfL2yN5k4qYk">按硬件选</button>
+      <button data-tab="need" data-page-node-id="qrF1pMoZQJWn90CqEAE7Un">按需求选</button>
+      <button data-tab="lib" data-page-node-id="FkiaKhFepBD6DWYjKfvmQX">模型库</button>
+      <button data-tab="basics" data-page-node-id="hO0b2ysqDsT0Byarw6FeOx">新手 6 步</button>
+      <button data-tab="lab" data-page-node-id="qSzAaREOjgo52Mp20gZhQt">实验室</button>
+    </nav>
+  </div>
+</header>
+
+<main data-page-node-id="9L7J0mjQaquTwRpzsJVmQo">
+  <div class="wrap" data-page-node-id="7CEWoqV5HKkAJYKPi0C626">
+    <div class="hero" data-page-node-id="6V1UupnYNJoBpCTv6xOZRh">
+      <h1 data-page-node-id="zWJtJ54lS9Gu7ocDmNBYcK">全球 Top50 大模型排名就在下面<br data-page-node-id="uRS1WpgOaVxJs3m6WFeTp0"><em data-page-node-id="gXfXySG0hXnSEBEcYpOHIv">再告诉你：你的电脑该装哪个</em></h1>
+      <p data-page-node-id="8SQkfHwm44ViA4cCSgPbJc">
+        先看排名知道谁最强、各自适合干什么；再按你的显存档位选能跑的本地模型，
+        或者按你手头的事选云端 API。所有命令可直接复制，所有参数都标明填什么。
+      </p>
+      <div class="meta" data-page-node-id="UWWErk56dFK5zxnSFOaAFh">
+        <span class="tag" data-page-node-id="ddTGUnHrWv0LEnh1HGyqFs">数据核实 <b id="ver" data-page-node-id="AsQ83y8PuEuxMkQ3ZCZZtF">—</b></span>
+        <span class="tag" data-page-node-id="eLjp8pRHZFBgzFE3tGXNpV">收录 <b id="cnt" data-page-node-id="WoGYpGdJEfbhCEINLk61wV">—</b> 个模型</span>
+        <span class="tag paid" data-page-node-id="ddTGUnHrWv0LEnh1HGyqFz">Top50 <b>2026.09</b></span>
+        <span class="tag verified" data-page-node-id="oSO4G6vEb9DBsbE0jjQ62f">已实测</span>
+        <span class="tag untested" data-page-node-id="VRs8aey17r3nd2Yz9vHdgc">待实测</span>
+      </div>
+      <div class="ticker"><div class="ticker-track" id="tick"></div></div>
+    </div>
+    <div id="view" data-page-node-id="7PkZfRpWJlgZhyo2IAQCdH"><noscript><div id="ssr" style="max-width:880px;margin:0 auto;padding:24px;color:#cdd6e4;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif"><h2 style="color:#fff">全球 Top50 大模型排名（2026.09，数据核实于 2026-09-11）</h2><ol><li>#1 GPT-6 Astra — OpenAI（评分 98.9｜上下文 1M｜付费 · 高端档）</li><li>#2 Claude Fable 5.1 — Anthropic（评分 96.4｜上下文 1M｜付费 · 高端档）</li><li>#3 Claude Opus 5 — Anthropic（评分 95.8｜上下文 500K｜付费 · 高端档）</li><li>#4 GPT-5.6 Sol — OpenAI（评分 94.6｜上下文 1M｜付费 · 中高端）</li><li>#5 Muse Spark 1.3 — Meta（评分 93.2｜上下文 1M｜付费 · 中端）</li><li>#6 Claude Fable 5 — Anthropic（评分 92.8｜上下文 500K｜付费 · 高端档）</li><li>#7 Claude Mythos — Anthropic（评分 92.1｜上下文 500K｜付费 · 高端档）</li><li>#8 Kimi K3 — Moonshot AI（月之暗面）（评分 90.9｜上下文 1M｜付费 · 中端（输出约 $15/M））</li><li>#9 GLM-5.3 — Z.ai（智谱）（评分 89.4｜上下文 1M｜付费 · 中端）</li><li>#10 DeepSeek V4 Pro — DeepSeek（评分 88.6｜上下文 1M｜付费 · 中端）</li><li>#11 Qwen3.8 Max — 阿里巴巴（评分 87.9｜上下文 1M｜付费 · 中端）</li><li>#12 Hy4 preview — 腾讯混元（评分 87.2｜上下文 1M｜付费 · 中端（约 $1.67/M））</li><li>#13 Gemini 3.8 Flash — Google（评分 86.5｜上下文 1M｜免费额度 + 付费）</li><li>#14 Claude Opus 4.8 — Anthropic（评分 85.7｜上下文 500K｜付费 · 高端档）</li><li>#15 GLM-5.3 Flash — Z.ai（智谱）（评分 84.9｜上下文 1M｜免费额度 + 付费（输入 $0.07/M））</li><li>#16 GPT-5.6 Terra — OpenAI（评分 84.1｜上下文 400K｜付费 · 中低端）</li><li>#17 Claude Sonnet 5 — Anthropic（评分 83.4｜上下文 500K｜付费 · 中端）</li><li>#18 Grok 4.6 — xAI（评分 82.6｜上下文 2M｜付费 · 中端）</li><li>#19 DeepSeek V4 Flash — DeepSeek（评分 81.8｜上下文 1.3M｜付费 · 低价（输出 $0.28/M））</li><li>#20 Gemini 3.7 Flash — Google（评分 80.9｜上下文 1M｜免费额度 + 付费）</li><li>#21 Llama 4 Maverick — Meta（评分 80.2｜上下文 1M｜开源权重 · 自部署免费）</li><li>#22 Qwen3-235B-A22B — 阿里巴巴（评分 79.5｜上下文 128K｜开源权重 · 阿里云低价）</li><li>#23 DeepSeek V3.1 — DeepSeek（评分 78.9｜上下文 128K｜开源权重 · 输出约 $0.4/M）</li><li>#24 Grok 4 — xAI（评分 78.3｜上下文 256K｜付费 · 中端）</li><li>#25 Mistral Large 3 — Mistral AI（评分 77.6｜上下文 128K｜付费 · 中端）</li><li>#26 GPT-5.6 mini — OpenAI（评分 77.0｜上下文 200K｜付费 · 中低端）</li><li>#27 Gemini 3 Pro — Google（评分 76.4｜上下文 1M｜付费 · 高端档）</li><li>#28 Claude Haiku 5 — Anthropic（评分 75.8｜上下文 200K｜付费 · 低价）</li><li>#29 文心 5.0（ERNIE 5.0） — 百度（文心）（评分 75.2｜上下文 256K｜付费 · 中端）</li><li>#30 Command A — Cohere（评分 74.6｜上下文 128K｜付费 · 中端）</li><li>#31 MiniMax M3 — MiniMax（稀宇）（评分 74.0｜上下文 1M｜开源权重 · 低价 API）</li><li>#32 Nemotron Ultra 253B — NVIDIA（评分 73.4｜上下文 128K｜开源权重 · 自部署免费）</li><li>#33 Qwen3-Coder — 阿里巴巴（评分 72.8｜上下文 256K｜开源权重 · 阿里云低价）</li><li>#34 豆包 Pro（Doubao） — 字节跳动（豆包）（评分 72.2｜上下文 256K｜付费 · 低价）</li><li>#35 Mistral 3 — Mistral AI（评分 71.6｜上下文 128K｜开源权重 · 自部署免费）</li><li>#36 Gemma 3（27B） — Google（评分 71.0｜上下文 128K｜开源权重 · 自部署免费）</li><li>#37 Kimi K2 — Moonshot AI（月之暗面）（评分 70.4｜上下文 256K｜开源权重 · 低价 API）</li><li>#38 阶跃 Step-3 — 阶跃星辰（评分 69.8｜上下文 128K｜开源权重 · 低价 API）</li><li>#39 Amazon Nova Pro — Amazon（评分 69.2｜上下文 300K｜付费 · 中端）</li><li>#40 GPT-5.1 — OpenAI（评分 68.6｜上下文 200K｜付费 · 中端）</li><li>#41 Gemini 3.5 Flash — Google（评分 68.0｜上下文 1M｜免费额度 + 付费）</li><li>#42 零一万物 Yi-Large — 零一万物（评分 67.4｜上下文 128K｜开源权重 · 低价 API）</li><li>#43 Mistral Codestral — Mistral AI（评分 66.8｜上下文 128K｜付费 · 中端）</li><li>#44 百川 Baichuan4 — 百川智能（评分 66.2｜上下文 128K｜付费 · 中端）</li><li>#45 Claude Opus 4.5 — Anthropic（评分 65.6｜上下文 200K｜付费 · 高端档）</li><li>#46 OLMo 2 — AllenAI（评分 65.0｜上下文 32K｜开源权重 · 自部署免费）</li><li>#47 Perplexity Sonar — Perplexity（评分 64.4｜上下文 128K｜付费 · 中端）</li><li>#48 Granite 4 — IBM（评分 63.8｜上下文 128K｜开源权重 · 自部署免费）</li><li>#49 Jamba 2 — AI21（评分 63.2｜上下文 256K｜开源权重 · 低价 API）</li><li>#50 Falcon 3 — TII（评分 62.6｜上下文 32K｜开源权重 · 自部署免费）</li></ol><p style="color:#8aa">本页为交互式页面，以上为纯文本榜单摘要；完整交互榜单请在支持 JavaScript 的浏览器中打开。</p></div></noscript></div>
+  </div>
+</main>
+
+<div class="overlay" id="overlay" data-page-node-id="LkJejo7QyETCfjHITSj7xL"></div>
+<aside class="panel" id="panel" data-page-node-id="Lu6D276hs6r0w4CDQPE1iP"></aside>
+<div class="toast" id="toast" data-page-node-id="BrFyPRGoWDgO6FXzOdopRH"></div>
+
+<footer class="site" data-page-node-id="xvI9HaCwq0HITKGQM9G72O">
+  <div class="wrap" data-page-node-id="c4SX2q1YHRk6eEIZNoyrBM">
+    <p data-page-node-id="chUJEZ1NhHCUOonCxSytQt">
+      数据核实于 <b id="ver2" data-page-node-id="PWEcJiOrtoFT24sDPoz1Em">—</b>。模型世界一个月一代——信息过期、命令跑不通、想看的模型没收录，
+      去 <a href="#" onclick="document.querySelector('[data-tab=\'lab\']').click();return false;" data-page-node-id="GqHxsI6YhUBQpk2AWxI4Od">实验室</a> 留言，我会实机测完把结论回帖。
+    </p>
+    <p style="margin-top:6px;color:var(--txt-3)" data-page-node-id="ruDYA53aqaoq2AWBy8YwbN">
+      这是纯静态页面，不上传任何数据。你提交的留言只存在你自己的浏览器里。
+    </p>
+    <p style="margin-top:10px;color:var(--txt-3);font-size:12px;line-height:1.7" data-page-node-id="disc001xx">
+      免责声明：本榜单为编辑性整理与观点性排名，数据核实于 <b>2026.09</b>，仅供参考，<b>不构成任何投资、采购或技术选型的最终建议</b>；模型参数、跑分可能随版本变动，使用前请以官方信息为准。各模型名称及商标归各自所有者所有。
+    </p>
+  </div>
+</footer>
+
+<div class="float-stack">
+  <button id="reIntro" title="重新打开引导">✦<span>引导</span></button>
+  <button id="backTop" title="回到顶部">
+    <svg viewBox="0 0 48 48"><circle class="ring" cx="24" cy="24" r="22"></circle></svg>
+    <span>↑</span>
+  </button>
+</div>
+
+<script>
+/* ===== data.js ===== */
+/* ============================================================
+ * model-hub / data.js
+ * 大模型一站式接入教程站 —— 数据层
+ * 数据核实日期：2026-09-11
+ * 来源：OpenAI / Anthropic 官方文档、Ollama 库、RTX 4080 16GB 实测榜、
+ *       NVIDIA NIM / Google AI Studio / Groq 免费额度页、computingforgeeks 开源模型对照表
+ * 维护约定：任何字段变更请同步 updated 字段；status=untested 的条目会在页面上打「待实测」标
+ * ============================================================ */
+
+const DATA_VERSION = '2026.09.11';
+
+/* ---------- 硬件档位 ---------- */
+const TIERS = [
+  {
+    id: 'cpu',
+    label: '无独显 / 核显',
+    hint: '内存 8-16GB，纯 CPU 推理',
+    icon: '🖥️',
+    rule: '选 2B-4B 量化模型，接受 5-15 tok/s。别碰 7B 以上，会卡到怀疑人生。',
+    picks: ['gemma3-4b', 'minicpm-v4-6', 'qwen3-2b', 'smollm3-3b', 'phi4-mini', 'deepseek-r1-1-5b'],
+    note: 'CPU 跑模型是能用，不是好用。真要生产力，最低门槛是 8GB 独显。'
+  },
+  {
+    id: 't4',
+    label: '4GB 显存',
+    hint: 'GTX 1650 / 笔记本入门独显',
+    icon: '🎴',
+    rule: '3B-4B 模型，Q4 量化，短上下文（4K 以内）。',
+    picks: ['gemma3-4b', 'qwen3-vl-4b', 'qwen3-2b', 'phi4-mini', 'minicpm-v4-6', 'deepseek-r1-1-5b'],
+    note: '4GB 只够跑一个 4B 模型 + 少量上下文，别开长对话。'
+  },
+  {
+    id: 't8',
+    label: '8GB 显存',
+    hint: 'RTX 3050 / 4060 / 3060',
+    icon: '🎴',
+    rule: '7B-8B 模型 Q4 是甜点区，能跑到 30-60 tok/s。',
+    picks: ['qwen3-8b', 'deepseek-r1-8b', 'qwen3-vl-4b', 'gemma3-4b', 'phi4-mini', 'minicpm-v4-6'],
+    note: '8GB 是本地 AI 的真正入门线。Q4_K_M 量化，别贪 Q8。'
+  },
+  {
+    id: 't12',
+    label: '12GB 显存',
+    hint: 'RTX 3060 12G / 4070',
+    icon: '🎴',
+    rule: '可以上 14B Q4（约 9GB），留 3GB 给上下文。',
+    picks: ['qwen3-14b', 'phi4-14b', 'deepseek-r1-14b', 'ministral-3-14b', 'qwen3-vl-8b', 'qwen3-8b'],
+    note: '14B 是 12GB 的天花板，再大就要卸载到内存。'
+  },
+  {
+    id: 't16',
+    label: '16GB 显存',
+    hint: 'RTX 4080 / 4080 SUPER / 5070 Ti ⭐ 最常见的高配',
+    icon: '🔥',
+    rule: '铁律：模型文件 ≤15GB 才能 100% 装进 VRAM。超过就 CPU 卸载，速度掉 3-10 倍。优先 MoE 架构（激活参数小、体积紧）。',
+    picks: ['gpt-oss-20b', 'qwen3-14b', 'ministral-3-14b', 'phi4-14b', 'deepseek-r1-14b', 'qwen3-vl-8b'],
+    note: '16GB 实测：gpt-oss:20b 139.93 tok/s（100% GPU） vs gpt-oss:120b 12.64 tok/s（78% CPU 卸载）——11 倍差距。选能全装进去的，不选参数最大的。'
+  },
+  {
+    id: 't24',
+    label: '24GB 显存',
+    hint: 'RTX 3090 / 4090',
+    icon: '🔥',
+    rule: '27B-32B Q4 自由跑，18-20GB 占用，还剩 4-6GB 给上下文。',
+    picks: ['qwen3-8-27b', 'qwen3-coder-30b', 'deepseek-r1-32b', 'mistral-small-3-2', 'qwen3-vl-30b', 'qwen3-omni-30b'],
+    note: '24GB 是本地跑旗舰开源模型的分水岭，qwen3.8:27b 是这一档的综合最优。'
+  },
+  {
+    id: 't32',
+    label: '32GB+ 显存',
+    hint: '双卡 / RTX 5090 / 大内存 Mac',
+    icon: '🚀',
+    rule: '可以跑 Q8 精度的 27B（30GB），或同时常驻两个模型。',
+    picks: ['qwen3-8-27b-q8', 'gemma4-31b', 'qwen3-8-27b', 'qwen3-omni-30b', 'deepseek-r1-32b', 'mistral-small-3-2'],
+    note: '到这一档，瓶颈从显存变成上下文长度管理。'
+  },
+  {
+    id: 'tserver',
+    label: '服务器 / 多卡',
+    hint: '128GB+ 内存 / 多 GPU',
+    icon: '🏢',
+    rule: '上 MoE 大模型：Qwen3.8 Flash Next(128GB)、GLM 5.3 Flash(384GB)、DeepSeek V4 Pro。',
+    picks: ['deepseek-v4-flash', 'glm-5-3-flash', 'llama-4-maverick', 'qwen3-8-flash-next', 'kimi-k3', 'minimax-m3'],
+    note: '个人用户其实不必硬上——同样的模型用 NVIDIA NIM 免费 API 更划算。'
+  }
+];
+
+/* ---------- 需求场景 ---------- */
+const NEEDS = [
+  {
+    id: 'coding',
+    label: '写代码',
+    icon: '💻',
+    free: ['qwen3-coder-30b', 'gpt-oss-20b', 'qwen3-14b', 'nvidia-nim', 'groq', 'deepseek-r1-8b'],
+    paid: ['claude-opus-5', 'gpt6-astra', 'claude-sonnet-5', 'kimi-k3', 'minimax-m3', 'gpt56-sol'],
+    why: '编码看两件事：长上下文 + 工具调用稳定性。本地 24GB 上 qwen3-coder:30b，16GB 上 gpt-oss:20b；云端最强档是 Claude Opus 5（Arena Code Elo 全球第一 1711.88）与 GPT-6 Astra，追求性价比选 Kimi K3（全球第二 1681.75，价格低 70%）。'
+  },
+  {
+    id: 'agent',
+    label: 'Agent / 自动跑任务',
+    icon: '🤖',
+    free: ['glm-5-3-flash', 'gpt-oss-20b', 'qwen3-14b', 'nvidia-nim', 'openrouter', 'deepseek-v4-flash'],
+    paid: ['claude-fable-5-1', 'gpt6-astra', 'kimi-k3', 'claude-opus-5', 'minimax-m3', 'gpt56-sol'],
+    why: '长链路任务要「不迷路」。Fable 5.1 是 Anthropic 为长程 Agent 设计的顶配（多榜第一）；预算有限用 GLM-5.3-Flash（1M 上下文、MIT 许可）或 MiniMax-M3（工具调用稳定）。'
+  },
+  {
+    id: 'chat',
+    label: '日常对话 / 写作',
+    icon: '💬',
+    free: ['qwen3-14b', 'ministral-3-14b', 'gemma3-4b', 'qwen3-2b', 'gemini-ai-studio', 'nvidia-nim'],
+    paid: ['claude-sonnet-5', 'gpt56-terra', 'claude-haiku-4-5', 'gpt56-sol', 'gpt6-astra', 'qwen3-8-flash-next'],
+    why: '日常用不必追旗舰。本地 16GB 跑 qwen3:14b（中文好、指令遵循强），纯 CPU 就 qwen3:2b；云端免费 Gemini 3.6 Flash 每天 1500 次够用；要质感上 Claude Sonnet 5，要便宜上 GPT-5.6 Terra。'
+  },
+  {
+    id: 'reasoning',
+    label: '推理 / 数学',
+    icon: '🧮',
+    free: ['deepseek-r1-14b', 'deepseek-r1-8b', 'qwen3-14b', 'phi4-mini', 'nvidia-nim', 'deepseek-v4-flash'],
+    paid: ['gpt6-astra', 'claude-opus-5', 'claude-fable-5-1', 'gpt56-sol', 'kimi-k3', 'deepseek-official'],
+    why: '要显式思维链就用 R1 系蒸馏模型（8B 起步，14B 更稳）；要极限分数，GPT-6 Astra 在推理榜拿满分档表现，Claude Opus 5 与 Fable 5.1 紧随其后。'
+  },
+  {
+    id: 'vision',
+    label: '看图 / 多模态',
+    icon: '👁️',
+    free: ['qwen3-vl-8b', 'minicpm-v4-6', 'qwen3-vl-4b', 'gemma3-4b', 'gemini-ai-studio', 'llama-4-maverick'],
+    paid: ['claude-sonnet-5', 'gpt6-astra', 'gpt56-terra', 'claude-opus-5', 'qwen3-8-flash-next', 'llama-4-maverick'],
+    why: '文档类图片用 MiniCPM-V4（6B 极小、OCR 强）；通用图片理解 qwen3-vl:8b；视频 / 超长多模态交 Gemini（1M 上下文免费档）；要开源可迁移就 Llama 4 Maverick。'
+  },
+  {
+    id: 'privacy',
+    label: '隐私 / 完全离线',
+    icon: '🔒',
+    free: ['gpt-oss-20b', 'qwen3-14b', 'ministral-3-14b', 'phi4-14b', 'qwen3-2b', 'deepseek-r1-8b'],
+    paid: [],
+    why: '合同、病历、未公开代码——只能本地。这一栏没有「付费方案」，因为只要数据出网就不叫隐私。注意 NVIDIA NIM 免费层条款允许用你的输入输出改进其模型，敏感数据别走免费云。'
+  },
+  {
+    id: 'longctx',
+    label: '长文档 / 整本书',
+    icon: '📚',
+    free: ['gemini-ai-studio', 'glm-5-3-flash', 'deepseek-v4-flash', 'qwen3-14b', 'phi4-mini', 'llama-4-maverick'],
+    paid: ['claude-opus-5', 'gpt6-astra', 'kimi-k3', 'claude-fable-5-1', 'qwen3-8-flash-next', 'minimax-m3'],
+    why: '免费档 Gemini 3.6 Flash 给 1M 上下文 + 每天 1500 请求，是长文档最划算的解；GLM-5.3-Flash 与 DeepSeek V4 Flash 同为 1M 级。本地想做长上下文显存压力极大，最多用 phi4-mini（128K）这种小模型顶一下。'
+  }
+];
+
+/* ---------- 模型库 ---------- */
+/* status: verified=已实测 / community=社区反馈 / untested=待实测（欢迎在实验室留言） */
+const MODELS = [
+  /* ===== 本地模型 ===== */
+  {
+    id: 'gpt-oss-20b',
+    name: 'gpt-oss:20b',
+    vendor: 'OpenAI（开源权重）',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['chat', 'coding', 'agent'],
+    hw: ['t16'],
+    vram: '13-14GB（Q4_K_M）',
+    ctx: '131K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '16GB 显存的速度之王，MoE 架构把 20B 压进 13GB，100% 装进 VRAM。',
+    bestFor: '交互聊天、快速代码生成。16GB 机器想「性能拉满」，这是第一个该装的。',
+    install: {
+      cmd: 'ollama pull gpt-oss:20b\nollama run gpt-oss:20b',
+      verify: '跑一句「用 Python 写个快速排序并解释」，应该在 1 秒内开始出字，速度约 120-140 tok/s。',
+      tune: '设置 OLLAMA_KEEP_ALIVE=-1 让模型常驻显存，实测首字延迟从 5.2s 降到 0.9s。\n再配 OLLAMA_FLASH_ATTENTION=1 拉长上下文。'
+    },
+    api: null,
+    pitfalls: [
+      '120B 版本（66GB）在 16GB 卡上会 78% 卸载到 CPU，只有 12.64 tok/s，别被参数迷惑。',
+      '首次 pull 约 13GB，确保 OLLAMA_MODELS 指向非系统盘，否则 C 盘爆炸。'
+    ],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'qwen3-14b',
+    name: 'qwen3:14b',
+    vendor: '阿里 通义千问',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['chat', 'coding', 'reasoning'],
+    hw: ['t12', 't16', 't24'],
+    vram: '9.3GB（Q4_K_M）',
+    ctx: '131K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '16GB 档指令遵循最好、中文最强的综合模型，61.85 tok/s。',
+    bestFor: '中文写作、日常问答、代码解释。想「什么都还行」就装它。',
+    install: {
+      cmd: 'ollama pull qwen3:14b\nollama run qwen3:14b',
+      verify: '让它用中文写一封请假邮件并润色两版，看是否严格按你的格式要求输出。',
+      tune: '16GB 卡可试 Q5_K_M（约 11GB）换取更好质量，但上下文要压到 8K 以内。'
+    },
+    api: null,
+    pitfalls: [
+      '上下文开太长会挤爆显存，14B 在 16GB 上建议 num-ctx 控制在 8192-16384。',
+      '同时开浏览器硬件加速 + 模型，容易 OOM，跑模型前先关掉吃显存的程序。'
+    ],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'ministral-3-14b',
+    name: 'ministral-3:14b',
+    vendor: 'Mistral AI',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['chat', 'coding'],
+    hw: ['t16'],
+    vram: '13GB',
+    ctx: '128K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '70.13 tok/s，Mistral 系的文风质量 + 16GB 全装载速度。',
+    bestFor: '追求「又快又好看」的日常使用，英文写作质感优于同档。',
+    install: {
+      cmd: 'ollama pull ministral-3:14b\nollama run ministral-3:14b',
+      verify: '中英混排写一段产品文案，观察语言自然度。',
+      tune: '与 qwen3:14b 二选一常驻即可，16GB 不建议同时挂两个 14B。'
+    },
+    api: null,
+    pitfalls: ['中文能力略逊于 qwen 系，纯中文场景优先 qwen3:14b。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'qwen3-8b',
+    name: 'qwen3:8b',
+    vendor: '阿里 通义千问',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['chat', 'coding'],
+    hw: ['t8', 't12'],
+    vram: '5-6GB',
+    ctx: '131K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '8GB 显存 / 16GB 内存的入门首选，8B 里综合最强。',
+    bestFor: '老机器、笔记本、只想先跑通流程的新手。',
+    install: {
+      cmd: 'ollama pull qwen3:8b\nollama run qwen3:8b',
+      verify: '问一个需要三步推理的问题，看是否逻辑连贯。',
+      tune: '8GB 卡建议 num-ctx 4096，把显存留给权重。'
+    },
+    api: null,
+    pitfalls: ['8B 在复杂多步任务上会明显掉链子，别拿它跑 agent。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'gemma3-4b',
+    name: 'gemma3:4b',
+    vendor: 'Google DeepMind',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['chat'],
+    hw: ['cpu', 't4', 't8'],
+    vram: '3.3GB',
+    ctx: '128K',
+    license: 'Gemma 许可（可商用，有附加条款）',
+    price: '免费',
+    oneLiner: '4GB 显存甚至纯 CPU 都能跑的轻量选手。',
+    bestFor: '低配机器、嵌入式、只是想体验本地模型。',
+    install: {
+      cmd: 'ollama pull gemma3:4b\nollama run gemma3:4b',
+      verify: '简单问答应在数秒内出字；CPU 模式约 5-15 tok/s 属正常。',
+      tune: '纯 CPU 时注意散热，长时间推理会撞温度墙。'
+    },
+    api: null,
+    pitfalls: [
+      'Gemma 系列不是纯 Apache/MIT，商用前务必读一遍许可条款。',
+      '中文能力弱于 qwen 同尺寸，中文场景别选它。'
+    ],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'minicpm-v4-6',
+    name: 'minicpm-v4.6',
+    vendor: 'OpenBMB / 面壁智能',
+    kind: 'local',
+    tier: 'free',
+    status: 'community',
+    tags: ['vision', 'chat'],
+    hw: ['cpu', 't4'],
+    vram: '1.6GB',
+    ctx: '256K',
+    license: '待核实',
+    price: '免费',
+    oneLiner: '1.6GB 的极小视觉模型，4GB 档甚至手机都能跑。',
+    bestFor: '极限轻量设备、需要看图但显存紧张。',
+    install: {
+      cmd: 'ollama pull minicpm-v4.6\nollama run minicpm-v4.6',
+      verify: '喂一张截图让它描述内容。',
+      tune: '视觉模型记得在下载体积上额外预留 1-2GB 给视觉投影层和图片 token。'
+    },
+    api: null,
+    pitfalls: ['许可条款未经本站核实，商用前请自行确认——欢迎在实验室补充。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'qwen3-vl-8b',
+    name: 'qwen3-vl:8b',
+    vendor: '阿里 通义千问',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['vision'],
+    hw: ['t12', 't16'],
+    vram: '6.1GB',
+    ctx: '256K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '12GB 卡上每 GB 显存换来的最佳视觉质量。',
+    bestFor: '截图理解、图片问答、UI 分析。',
+    install: {
+      cmd: 'ollama pull qwen3-vl:8b\nollama run qwen3-vl:8b',
+      verify: '传一张带表格的截图，让它提取成 Markdown。',
+      tune: '文档类图片优先用 glm-ocr（2.2GB），效果比通用视觉模型更好还更省。'
+    },
+    api: null,
+    pitfalls: ['图片越大越吃显存，大图先压缩再喂。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'qwen3-vl-4b',
+    name: 'qwen3-vl:4b',
+    vendor: '阿里 通义千问',
+    kind: 'local',
+    tier: 'free',
+    status: 'community',
+    tags: ['vision'],
+    hw: ['t4', 't8'],
+    vram: '3.3GB',
+    ctx: '256K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '8GB 档的甜点视觉模型，留足余量。',
+    bestFor: '8GB 显存想跑看图。',
+    install: { cmd: 'ollama pull qwen3-vl:4b\nollama run qwen3-vl:4b', verify: '同 8b 版本。', tune: '' },
+    api: null,
+    pitfalls: [],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'qwen3-vl-30b',
+    name: 'qwen3-vl:30b-a3b',
+    vendor: '阿里 通义千问',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['vision', 'coding'],
+    hw: ['t16', 't24'],
+    vram: '22GB（16GB 卡上 30% 卸载）',
+    ctx: '256K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '16GB 上会部分卸载但仍跑 50.99 tok/s，多模态里性价比意外地高。',
+    bestFor: '16GB 想跑强多模态，能接受一定卸载损耗。',
+    install: {
+      cmd: 'ollama pull qwen3-vl:30b-a3b\nollama run qwen3-vl:30b-a3b',
+      verify: '传一张复杂图表让它总结趋势。',
+      tune: '22GB 体积在 16GB 卡上必然卸载，介意速度就退回 qwen3-vl:8b。'
+    },
+    api: null,
+    pitfalls: ['22GB 装不进 16GB 显存，会有约 30% 层跑在 CPU，别期待满速。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'phi4-14b',
+    name: 'phi4:14b',
+    vendor: 'Microsoft',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['reasoning', 'coding'],
+    hw: ['t12', 't16'],
+    vram: '9.1GB',
+    ctx: '16K',
+    license: 'MIT',
+    price: '免费',
+    oneLiner: 'MIT 许可的小钢炮，STEM 和推理能力超出体积。',
+    bestFor: '数学、逻辑题、单元测试生成，以及最宽松的商用许可需求。',
+    install: {
+      cmd: 'ollama pull phi4:14b\nollama run phi4:14b',
+      verify: '出一道需要多步推导的数学题看过程是否严谨。',
+      tune: '上下文只有 16K，长对话任务别用它。'
+    },
+    api: null,
+    pitfalls: ['16K 上下文是硬伤，长文档场景直接排除。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'deepseek-r1-14b',
+    name: 'deepseek-r1:14b',
+    vendor: 'DeepSeek',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['reasoning'],
+    hw: ['t12', 't16', 't24'],
+    vram: '9GB',
+    ctx: '66K',
+    license: 'MIT',
+    price: '免费',
+    oneLiner: '会输出完整思维链的推理模型，调试和算法题好帮手。',
+    bestFor: '想看懂模型「怎么想的」——调试、算法、逐步推导。',
+    install: {
+      cmd: 'ollama pull deepseek-r1:14b\nollama run deepseek-r1:14b',
+      verify: '问一道逻辑陷阱题，观察它是否自我纠错。',
+      tune: 'R1 会输出 <think> 块，接应用时记得过滤或保留展示。'
+    },
+    api: null,
+    pitfalls: ['思维链会消耗额外 token，聊天体感「慢」，是特性不是 bug。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'mistral-small-3-2',
+    name: 'mistral-small:3.2',
+    vendor: 'Mistral AI',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['chat', 'coding'],
+    hw: ['t16', 't24'],
+    vram: '19GB（16GB 卡上 18% 卸载）',
+    ctx: '128K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '语言质量最好的 24B，16GB 上跑 18.51 tok/s。',
+    bestFor: '对文笔质量要求高于速度的场景（批处理、长文生成）。',
+    install: {
+      cmd: 'ollama pull mistral-small:3.2\nollama run mistral-small:3.2',
+      verify: '让它写一段有文风的散文，比较与 14B 模型的语感差距。',
+      tune: '19GB 在 16GB 卡上会卸载 18%，交互场景不推荐，批处理合适。'
+    },
+    api: null,
+    pitfalls: ['中英法三语强，但中文不如 qwen 系。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'qwen3-8-27b',
+    name: 'qwen3.8:27b',
+    vendor: '阿里 通义千问',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['coding', 'agent', 'vision', 'chat'],
+    hw: ['t24', 't32'],
+    vram: '18GB（Q4）',
+    ctx: '1.01M',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '2026 年 24GB 档的综合最优：编码、agent、视觉、1M 上下文全包。',
+    bestFor: '24GB 卡用户，一台机器覆盖几乎所有本地需求。',
+    install: {
+      cmd: 'ollama pull qwen3.8:27b\nollama run qwen3.8:27b',
+      verify: 'SWE-bench 级别的任务可试：给一个真实 bug 让它定位并修。',
+      tune: '32GB 显存可上 q8_0 版本（30GB），质量更好。'
+    },
+    api: null,
+    pitfalls: [
+      '18GB 体积注定与 16GB 卡无缘，24GB 是起步线。',
+      '注意：阿里 2026-08 起对部分 Qwen 旗舰改动了许可条款，商用前再次确认当前协议。'
+    ],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'qwen3-coder-30b',
+    name: 'qwen3-coder:30b-a3b',
+    vendor: '阿里 通义千问',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['coding', 'agent'],
+    hw: ['t24'],
+    vram: '18GB',
+    ctx: '262K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '本地编码专用模型，工具调用成熟，LiveCodeBench 74%。',
+    bestFor: '24GB 卡 + Continue/Cline/Aider 做仓库级代码任务。',
+    install: {
+      cmd: 'ollama pull qwen3-coder:30b\nollama run qwen3-coder:30b',
+      verify: '在 Continue.dev 里配 provider=ollama, model=qwen3-coder:30b，让它改一个真实函数。',
+      tune: '配 Continue.dev / Cline 时，把 context length 设到 64K 以上效果更好。'
+    },
+    api: null,
+    pitfalls: ['30B-A3B 是 MoE，体积 18GB，16GB 卡跑不动（实测仅 5.5 tok/s）。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'deepseek-r1-32b',
+    name: 'deepseek-r1:32b',
+    vendor: 'DeepSeek',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['reasoning', 'coding'],
+    hw: ['t24', 't32'],
+    vram: '24GB',
+    ctx: '66K',
+    license: 'MIT',
+    price: '免费',
+    oneLiner: '24GB 档的推理专家，算法与调试。',
+    bestFor: '需要强推理且愿意等（速度慢于 14B 一半）。',
+    install: { cmd: 'ollama pull deepseek-r1:32b\nollama run deepseek-r1:32b', verify: '同 14b。', tune: '' },
+    api: null,
+    pitfalls: ['24GB 占用在 24GB 卡上几乎没有上下文余量，建议 num-ctx 保守设置。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'qwen3-8-27b-q8',
+    name: 'qwen3.8:27b-q8_0',
+    vendor: '阿里 通义千问',
+    kind: 'local',
+    tier: 'free',
+    status: 'community',
+    tags: ['coding', 'agent'],
+    hw: ['t32'],
+    vram: '30GB',
+    ctx: '256K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '32GB 显存档：同模型 8bit 版，质量优先于速度。',
+    bestFor: '32GB+ 显存，且任务对精度敏感。',
+    install: { cmd: 'ollama pull qwen3.8:27b-q8_0\nollama run qwen3.8:27b-q8_0', verify: '同 27b。', tune: '' },
+    api: null,
+    pitfalls: ['30GB 占用，32GB 卡也要小心上下文挤占。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'qwen3-2b',
+    name: 'qwen3:2b',
+    vendor: '阿里 通义千问',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['chat', 'coding'],
+    hw: ['cpu', 't4', 't8'],
+    vram: '1.9GB（Q4_K_M）',
+    ctx: '32K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '2B 里中文最稳的一个，1.9GB 体积，纯 CPU 也能跑到 20-30 tok/s。',
+    bestFor: '无独显机器的日常问答、轻量摘要、给大模型做「草稿机」。',
+    install: {
+      cmd: 'ollama pull qwen3:2b\nollama run qwen3:2b',
+      verify: '问一个中文常识问题，2 秒内应该开始出字。',
+      tune: 'CPU 机器上设置 OLLAMA_NUM_THREADS 为物理核心数，别用默认值。'
+    },
+    api: null,
+    pitfalls: ['逻辑推理和长文能力有限，别拿它做需要多步推导的活。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'smollm3-3b',
+    name: 'smollm3:3b',
+    vendor: 'Hugging Face',
+    kind: 'local',
+    tier: 'free',
+    status: 'community',
+    tags: ['chat', 'reasoning'],
+    hw: ['cpu', 't4'],
+    vram: '2.2GB',
+    ctx: '64K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '3B 档里少见的「能开/关思维链」模型，64K 上下文超出同体量一大截。',
+    bestFor: '在树莓派、老笔记本、纯 CPU 环境做推理类小任务。',
+    install: {
+      cmd: 'ollama pull smollm3:3b\nollama run smollm3:3b',
+      verify: '问一道需要两步计算的应用题，看它是否给出推理过程。',
+      tune: '不需要推理时在提示词里关掉 thinking，速度能翻倍。'
+    },
+    api: null,
+    pitfalls: ['中文语料占比低于 qwen 系，纯中文写作优先 qwen3:2b。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'phi4-mini',
+    name: 'phi4-mini:3.8b',
+    vendor: 'Microsoft',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['coding', 'reasoning', 'chat'],
+    hw: ['cpu', 't4', 't8'],
+    vram: '2.8GB',
+    ctx: '128K',
+    license: 'MIT',
+    price: '免费',
+    oneLiner: '3.8B 给 128K 上下文，小模型里罕见的「长上下文 + 代码」组合。',
+    bestFor: '低配机器跑代码补全、函数级重构、批量文本清洗。',
+    install: {
+      cmd: 'ollama pull phi4-mini\nollama run phi4-mini',
+      verify: '丢一段 200 行代码让它找 bug，看定位是否准确。',
+      tune: '做批量任务时把 num-ctx 直接拉到 32768，2.8GB 模型扛得住。'
+    },
+    api: null,
+    pitfalls: ['创意写作偏「教科书味」，文案类任务别选它。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'deepseek-r1-1-5b',
+    name: 'deepseek-r1:1.5b',
+    vendor: 'DeepSeek',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['reasoning'],
+    hw: ['cpu', 't4'],
+    vram: '1.1GB',
+    ctx: '32K',
+    license: 'MIT',
+    price: '免费',
+    oneLiner: '1.1GB 就能跑的思维链模型，所有档位都能当「备用推理引擎」。',
+    bestFor: '极低配机器上做需要显式推理的小题，或做 R1 系列的行为测试。',
+    install: {
+      cmd: 'ollama pull deepseek-r1:1.5b\nollama run deepseek-r1:1.5b',
+      verify: '问一道逻辑题，应该看到 <think> 形式的思考过程再出答案。',
+      tune: '体积才 1.1GB，可以常驻内存不卸载，当「秒开推理器」用。'
+    },
+    api: null,
+    pitfalls: ['1.5B 参数决定了它推理深度有限，复杂题会绕不出来。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'deepseek-r1-8b',
+    name: 'deepseek-r1:8b',
+    vendor: 'DeepSeek',
+    kind: 'local',
+    tier: 'free',
+    status: 'verified',
+    tags: ['reasoning', 'coding'],
+    hw: ['t8', 't12', 't16'],
+    vram: '5.0GB（Q4_K_M）',
+    ctx: '64K',
+    license: 'MIT',
+    price: '免费',
+    oneLiner: '8GB 显存档的推理主力，思维链质量明显强过 1.5B。',
+    bestFor: '数学题、逻辑推导、需要「把过程写出来」的任务。',
+    install: {
+      cmd: 'ollama pull deepseek-r1:8b\nollama run deepseek-r1:8b',
+      verify: '让它解一道需要列方程的应用题，检查推导是否自洽。',
+      tune: '思考过程会吃掉大量 token，num-predict 至少给到 2048 才不会截断。'
+    },
+    api: null,
+    pitfalls: ['输出慢（要先把思考写完），交互式聊天别用它。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'qwen3-omni-30b',
+    name: 'qwen3-omni:30b',
+    vendor: '阿里 通义千问',
+    kind: 'local',
+    tier: 'free',
+    status: 'community',
+    tags: ['vision', 'chat', 'audio'],
+    hw: ['t24', 't32'],
+    vram: '19GB',
+    ctx: '32K',
+    license: 'Apache 2.0',
+    price: '免费',
+    oneLiner: '文本 / 图像 / 音频 / 视频全模态一个模型搞定，本地 Omni 方案。',
+    bestFor: '既要看图又要听音的任务：视频内容理解、会议录音 + 画面联合分析。',
+    install: {
+      cmd: 'ollama pull qwen3-omni:30b\nollama run qwen3-omni:30b',
+      verify: '同时给一张图 + 一段描述，看它能否把两者关联起来回答。',
+      tune: '音视频输入会额外吃显存，24GB 卡建议先把 num-ctx 压到 8192。'
+    },
+    api: null,
+    pitfalls: ['19GB 起步，16GB 卡上会大量卸载到 CPU，速度掉到不可用。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'gemma4-31b',
+    name: 'gemma4:31b',
+    vendor: 'Google DeepMind',
+    kind: 'local',
+    tier: 'free',
+    status: 'community',
+    tags: ['chat', 'vision'],
+    hw: ['t32'],
+    vram: '24GB',
+    ctx: '131K',
+    license: 'Gemma 许可',
+    price: '免费',
+    oneLiner: '32-48GB 档的多模态选择，QAT 量化版效率好。',
+    bestFor: '大内存机器做图文混合任务。',
+    install: { cmd: 'ollama pull gemma4:31b\nollama run gemma4:31b', verify: '图文混合问答。', tune: '' },
+    api: null,
+    pitfalls: ['Apple Silicon 上 2026-07 MLX 更新后提速约 90%，Mac 用户可优先。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'glm-5-3-flash',
+    name: 'GLM-5.3-Flash',
+    vendor: 'Z.ai（智谱）',
+    kind: 'local',
+    tier: 'free',
+    status: 'untested',
+    tags: ['coding', 'agent'],
+    hw: ['tserver'],
+    vram: '约 320B 总权重，需 384GB 级部署',
+    ctx: '1.048M',
+    license: 'MIT',
+    price: '免费',
+    oneLiner: '1M 上下文 + MIT 许可的 MoE 编码强者，但体积是服务器级的。',
+    bestFor: '多卡工作站；个人用户建议改用 NVIDIA NIM 免费 API 调同一个模型，别自己扛。',
+    install: {
+      cmd: '# 个人机器不建议本地部署，改用免费 API：\n# NVIDIA NIM 提供 z-ai/glm5.2 等 GLM 系列免费端点',
+      verify: '如坚持本地部署：需 384GB 级显存/内存，官方 FP8 部署档。',
+      tune: ''
+    },
+    api: null,
+    pitfalls: [
+      '总权重 320B，即使 MoE 只激活 18B，权重体积也下不来——「激活小」不等于「装得下」。',
+      '本站未实测，欢迎在实验室补充你的部署经验。'
+    ],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'deepseek-v4-flash',
+    name: 'DeepSeek V4 Flash',
+    vendor: 'DeepSeek',
+    kind: 'local',
+    tier: 'free',
+    status: 'untested',
+    tags: ['coding', 'reasoning', 'vision'],
+    hw: ['tserver'],
+    vram: '305B 总权重 / 13B 激活',
+    ctx: '1M',
+    license: 'MIT',
+    price: '免费',
+    oneLiner: 'MIT 许可、1M 上下文、带视觉编码器的 MoE，服务器级性价比之选。',
+    bestFor: '多卡服务器；个人用走 NVIDIA NIM 免费端点更实际。',
+    install: { cmd: '# 个人推荐走免费 API：NVIDIA NIM 上有 DeepSeek V4 Flash 端点', verify: '', tune: '' },
+    api: null,
+    pitfalls: ['本站未实测本地部署，欢迎留言补充。'],
+    updated: '2026-09-11'
+  },
+
+  /* ===== 云端 API ===== */
+  {
+    id: 'nvidia-nim',
+    name: 'NVIDIA NIM（免费 API）',
+    vendor: 'NVIDIA',
+    kind: 'api',
+    tier: 'free',
+    status: 'verified',
+    tags: ['coding', 'agent', 'chat', 'longctx'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '最高 1M（视模型）',
+    license: '—',
+    price: '免费：40 RPM，无 token 上限',
+    oneLiner: '目前最值得锁定的免费 API：永久免费、不看额度只看速率、82+ 开源模型。',
+    bestFor: '零成本调用 GLM-5.2 / DeepSeek V4 / Kimi K2.6 / gpt-oss-120b 等顶级开源模型。',
+    install: null,
+    api: {
+      signup: '打开 build.nvidia.com，用邮箱注册（需手机号验证，不需要信用卡）',
+      key: '选一个模型 → 右上角 Get API Key → 复制（nvapi- 开头）',
+      baseUrl: 'https://integrate.api.nvidia.com/v1',
+      modelId: 'z-ai/glm5.2（当前免费榜首）、deepseek-ai/deepseek-v4-flash、moonshotai/kimi-k2.6 等',
+      curl: 'curl https://integrate.api.nvidia.com/v1/chat/completions \\\n  -H "Authorization: Bearer $NVIDIA_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"model":"z-ai/glm5.2","messages":[{"role":"user","content":"你好"}],"max_tokens":512}\'',
+      compat: '完全兼容 OpenAI 格式——代码里只改 base_url 和 api_key 即可'
+    },
+    pitfalls: [
+      '40 RPM 上限且不可提升，agent 的连续工具调用很容易触发 429。',
+      '免费层条款允许 NVIDIA 用你的输入输出改进模型——敏感数据、客户代码别走这条路。',
+      '手机验证是硬门槛，国内号码通常可过。'
+    ],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'gemini-ai-studio',
+    name: 'Google AI Studio（免费 API）',
+    vendor: 'Google',
+    kind: 'api',
+    tier: 'free',
+    status: 'verified',
+    tags: ['longctx', 'vision', 'chat'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '1,048,576 tokens（Flash 系）',
+    license: '—',
+    price: '免费：约 1500 请求/日，15 RPM',
+    oneLiner: '免费档给 1M 上下文 + 每天 1500 次，长文档和多模态的最划算解。',
+    bestFor: '整本书分析、视频/音频理解、PDF 问答。',
+    install: null,
+    api: {
+      signup: '打开 aistudio.google.com，用 Google 账号登录（不要信用卡）',
+      key: 'Get API Key → Create API key → 复制（AIza 开头）',
+      baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+      modelId: 'gemini-3.6-flash（免费旗舰）、gemini-3.5-flash-lite、gemini-3.1-flash-lite',
+      curl: 'curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=$GOOGLE_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"contents":[{"parts":[{"text":"总结一下这份文档"}]}]}\'',
+      compat: '不兼容 OpenAI 格式，需用官方 SDK 或自行适配；也可走 OpenAI 兼容网关'
+    },
+    pitfalls: [
+      'Pro 系列（2.5 Pro / 3.1 Pro）自 2026-04-01 起已移除免费层，只剩 Flash 系。',
+      'EEA/UK/瑞士以外地区的数据可能被用于训练，敏感内容谨慎。',
+      'Google 有前科：免费额度曾无预警削减，别把生产系统押在这一个源上。'
+    ],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'groq',
+    name: 'Groq（免费 API）',
+    vendor: 'Groq',
+    kind: 'api',
+    tier: 'free',
+    status: 'verified',
+    tags: ['chat', 'coding'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '131K',
+    license: '—',
+    price: '免费：约 1000 请求/日（按模型）',
+    oneLiner: '300-3000+ tok/s 的极致速度，LPU 芯片给你的免费体验装。',
+    bestFor: '需要极低延迟的场景：实时对话、流式输出演示。',
+    install: null,
+    api: {
+      signup: 'console.groq.com 注册（邮箱即可，不需要卡）',
+      key: 'API Keys → Create API Key',
+      baseUrl: 'https://api.groq.com/openai/v1',
+      modelId: 'openai/gpt-oss-120b、qwen3.8:27b（Groq 上架标签以控制台为准）、llama-4-scout',
+      curl: 'curl https://api.groq.com/openai/v1/chat/completions \\\n  -H "Authorization: Bearer $GROQ_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"model":"openai/gpt-oss-120b","messages":[{"role":"user","content":"你好"}]}\'',
+      compat: '兼容 OpenAI 格式'
+    },
+    pitfalls: ['每个模型有独立的 RPD 上限，换模型前先查控制台配额。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'ollama-cloud',
+    name: 'Ollama Cloud（免费层）',
+    vendor: 'Ollama',
+    kind: 'api',
+    tier: 'free',
+    status: 'community',
+    tags: ['coding', 'agent'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '视模型',
+    license: '—',
+    price: '免费层（限额未公开）',
+    oneLiner: '不用本地 GPU 也能跑 kimi-k3、deepseek-v4-pro 这类顶级模型。',
+    bestFor: '本地跑不动、又想用开源顶配的过渡方案。',
+    install: null,
+    api: {
+      signup: 'ollama.com 注册账号，本地 ollama 登录',
+      key: 'ollama signin → 用账户凭证',
+      baseUrl: 'Ollama Cloud 端点（跟随官方客户端）',
+      modelId: 'kimi-k3、deepseek-v4-flash、deepseek-v4-pro、minimax-m3',
+      curl: '# 通过本地 ollama 客户端连云\nollama run kimi-k3',
+      compat: 'Ollama 原生协议 + OpenAI 兼容端点'
+    },
+    pitfalls: ['官方未公布限额数值，属「周级/会话级限制且不可预期」，不适合生产环境。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'openrouter',
+    name: 'OpenRouter（免费模型聚合）',
+    vendor: 'OpenRouter',
+    kind: 'api',
+    tier: 'freemium',
+    status: 'verified',
+    tags: ['chat', 'coding', 'agent'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '最高 1M',
+    license: '—',
+    price: '免费模型约 50 请求/日；付费按量',
+    oneLiner: '一个 key 打通 35+ 免费模型和所有付费旗舰。',
+    bestFor: '想在一个地方对比多家模型、或做模型路由。',
+    install: null,
+    api: {
+      signup: 'openrouter.ai 注册',
+      key: 'Keys → Create Key（sk-or- 开头）',
+      baseUrl: 'https://openrouter.ai/api/v1',
+      modelId: '在模型名后加 :free 走免费档，如 deepseek/deepseek-v4-flash:free',
+      curl: 'curl https://openrouter.ai/api/v1/chat/completions \\\n  -H "Authorization: Bearer $OPENROUTER_API_KEY" \\\n  -d \'{"model":"deepseek/deepseek-v4-flash:free","messages":[{"role":"user","content":"你好"}]}\'',
+      compat: '完全兼容 OpenAI 格式'
+    },
+    pitfalls: ['免费模型轮换频繁，今天能用的 ID 下周可能下线，代码里要容错。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'github-models',
+    name: 'GitHub Models（免费）',
+    vendor: 'GitHub / Microsoft',
+    kind: 'api',
+    tier: 'free',
+    status: 'community',
+    tags: ['chat', 'coding'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '视模型',
+    license: '—',
+    price: '免费（与 Copilot 档位挂钩）',
+    oneLiner: '有 GitHub 账号就能免费调 GPT-5 / Grok 3 等旗舰，无需独立 key。',
+    bestFor: '开发者零成本试用旗舰模型做原型验证。',
+    install: null,
+    api: {
+      signup: 'github.com/marketplace/models，用 GitHub 账号登录',
+      key: '用 GitHub PAT（Personal Access Token）作为 API key',
+      baseUrl: 'https://models.github.ai/inference（或 models.inference.ai.azure.com）',
+      modelId: 'openai/gpt-5、xai/grok-3 等（以目录为准）',
+      curl: 'curl https://models.github.ai/inference/chat/completions \\\n  -H "Authorization: Bearer $GITHUB_TOKEN" \\\n  -d \'{"model":"openai/gpt-5","messages":[{"role":"user","content":"你好"}]}\'',
+      compat: '兼容 OpenAI 格式'
+    },
+    pitfalls: ['额度与个人 Copilot 档位绑定，无独立配额，不适合团队共用。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'gpt6-astra',
+    name: 'GPT-6 Astra',
+    vendor: 'OpenAI',
+    kind: 'api',
+    tier: 'paid',
+    status: 'verified',
+    tags: ['coding', 'agent', 'reasoning', 'vision'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '大上下文（官方未明确公开上限）',
+    license: '商业 API',
+    price: '$10 / 百万输入 token，$50 / 百万输出 token（缓存输入 $1）',
+    oneLiner: '2026-09-03 发布的新一代旗舰，OpenAI 自称「全球最智能、对齐最好」的模型。',
+    bestFor: '预算充足的极限任务：软件工程、科学研究、复杂 agent、计算机操作。',
+    install: null,
+    api: {
+      signup: 'platform.openai.com 注册并绑定支付方式',
+      key: 'API Keys → Create new secret key（sk- 开头）',
+      baseUrl: 'https://api.openai.com/v1',
+      modelId: 'gpt-6-astra（另有 Astra Pro 供 Pro/Business/Enterprise）',
+      curl: 'curl https://api.openai.com/v1/responses \\\n  -H "Authorization: Bearer $OPENAI_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"model":"gpt-6-astra","input":"帮我重构这个函数"}\'',
+      compat: 'Responses API / Chat Completions；需注意新版用 Responses API'
+    },
+    pitfalls: [
+      '价格是 GPT-5.6 Sol 促销价的 2.5 倍（$10/$50 vs $4/$20）。',
+      '最强网络安全能力未全面开放；企业版默认关闭访问，需管理员开启。',
+      '国内直连通常需要代理，且需合规使用。'
+    ],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'gpt56-sol',
+    name: 'GPT-5.6 Sol',
+    vendor: 'OpenAI',
+    kind: 'api',
+    tier: 'paid',
+    status: 'verified',
+    tags: ['coding', 'agent', 'vision'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '大上下文',
+    license: '商业 API',
+    price: '$4 / $20 每百万 token（促销价，至少持续到 2026-11-21）',
+    oneLiner: 'GPT-6 发布前的旗舰，促销价下性价比反超新款。',
+    bestFor: '想要接近顶配能力但预算敏感的编码/agent 任务。',
+    install: null,
+    api: {
+      signup: 'platform.openai.com',
+      key: 'API Keys',
+      baseUrl: 'https://api.openai.com/v1',
+      modelId: 'gpt-5.6-sol（另有 terra 均衡档、luna 低价档）',
+      curl: 'curl https://api.openai.com/v1/responses \\\n  -H "Authorization: Bearer $OPENAI_API_KEY" \\\n  -d \'{"model":"gpt-5.6-sol","input":"写个快速排序"}\'',
+      compat: 'Responses API；支持 max / ultra 推理档（ultra 默认并行 4 个 agent）'
+    },
+    pitfalls: [
+      '促销价 2026-11-21 后可能回调到 $5/$30，做成本预算要留余量。',
+      '已退役型号：GPT-4o / GPT-4.1 / o4-mini / GPT-5（2026-02-13）、GPT-5.1（3-11），别再写进新代码。'
+    ],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'gpt56-terra',
+    name: 'GPT-5.6 Terra / Luna',
+    vendor: 'OpenAI',
+    kind: 'api',
+    tier: 'paid',
+    status: 'verified',
+    tags: ['chat', 'coding'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '大上下文',
+    license: '商业 API',
+    price: 'Terra $2 / $12；Luna $0.20 / $1.20 每百万 token',
+    oneLiner: '日常档（Terra）与极致低价档（Luna），Luna 便宜到可以随便用。',
+    bestFor: '大批量日常任务、分类、抽取、后台 agent 自动化。',
+    install: null,
+    api: {
+      signup: 'platform.openai.com',
+      key: 'API Keys',
+      baseUrl: 'https://api.openai.com/v1',
+      modelId: 'gpt-5.6-terra / gpt-5.6-luna',
+      curl: 'curl https://api.openai.com/v1/responses \\\n  -H "Authorization: Bearer $OPENAI_API_KEY" \\\n  -d \'{"model":"gpt-5.6-luna","input":"把这段文本分类"}\'',
+      compat: 'Responses API'
+    },
+    pitfalls: ['ChatGPT 免费用户默认用的就是 Luna——如果只是聊天，可能根本不需要付费。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'claude-fable-5-1',
+    name: 'Claude Fable 5.1',
+    vendor: 'Anthropic',
+    kind: 'api',
+    tier: 'paid',
+    status: 'verified',
+    tags: ['agent', 'coding', 'reasoning'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '1M tokens',
+    license: '商业 API',
+    price: '$10 / 百万输入，$50 / 百万输出',
+    oneLiner: 'Anthropic 公开模型里的最高能力档，专为长程 agent 设计。',
+    bestFor: '失败成本极高的长链路任务：仓库级重构、复杂工具调用、长时研究。',
+    install: null,
+    api: {
+      signup: 'console.anthropic.com 注册（需绑卡）',
+      key: 'Settings → API Keys → Create Key（sk-ant- 开头）',
+      baseUrl: 'https://api.anthropic.com',
+      modelId: 'claude-fable-5-1',
+      curl: 'curl https://api.anthropic.com/v1/messages \\\n  -H "x-api-key: $ANTHROPIC_API_KEY" \\\n  -H "anthropic-version: 2023-06-01" \\\n  -H "content-type: application/json" \\\n  -d \'{"model":"claude-fable-5-1","max_tokens":1024,"messages":[{"role":"user","content":"你好"}]}\'',
+      compat: 'Anthropic Messages API（也支持 AWS Bedrock / Vertex AI / Azure AI Foundry）'
+    },
+    pitfalls: [
+      '必须接受 30 天数据保留，不提供零数据留存（ZDR）方案——合规敏感场景直接出局。',
+      '增强的安全分类器会误伤正常编程/调试请求，官方承认假阳性上升。',
+      'Mythos 5/5.1 是受限的防御性网络安全模型，普通账号申请不到。'
+    ],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'claude-opus-5',
+    name: 'Claude Opus 5',
+    vendor: 'Anthropic',
+    kind: 'api',
+    tier: 'paid',
+    status: 'verified',
+    tags: ['coding', 'agent', 'vision'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '1M tokens',
+    license: '商业 API',
+    price: '$5 / 百万输入，$25 / 百万输出',
+    oneLiner: '2026-07-24 发布，复杂 agent 编码和专业工作的主力旗舰。',
+    bestFor: '日常专业工作的最强档，价格只有 Fable 的一半。',
+    install: null,
+    api: {
+      signup: 'console.anthropic.com',
+      key: 'Settings → API Keys',
+      baseUrl: 'https://api.anthropic.com',
+      modelId: 'claude-opus-5',
+      curl: 'curl https://api.anthropic.com/v1/messages \\\n  -H "x-api-key: $ANTHROPIC_API_KEY" \\\n  -H "anthropic-version: 2023-06-01" \\\n  -H "content-type: application/json" \\\n  -d \'{"model":"claude-opus-5","max_tokens":1024,"messages":[{"role":"user","content":"你好"}]}\'',
+      compat: 'Messages API；也可走 Bedrock / Vertex / Azure'
+    },
+    pitfalls: ['知识截止 2026-05，更新的事实需要联网检索。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'claude-sonnet-5',
+    name: 'Claude Sonnet 5',
+    vendor: 'Anthropic',
+    kind: 'api',
+    tier: 'paid',
+    status: 'verified',
+    tags: ['chat', 'coding', 'vision'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '1M tokens',
+    license: '商业 API',
+    price: '$3 / $15 每百万 token（促销期 $2/$10，至 2026-08-31）',
+    oneLiner: '速度与智能的最佳平衡点，多数场景的实际首选。',
+    bestFor: '不想纠结就选它——能力接近 Opus，价格低 40%。',
+    install: null,
+    api: {
+      signup: 'console.anthropic.com',
+      key: 'Settings → API Keys',
+      baseUrl: 'https://api.anthropic.com',
+      modelId: 'claude-sonnet-5',
+      curl: 'curl https://api.anthropic.com/v1/messages \\\n  -H "x-api-key: $ANTHROPIC_API_KEY" \\\n  -H "anthropic-version: 2023-06-01" \\\n  -H "content-type: application/json" \\\n  -d \'{"model":"claude-sonnet-5","max_tokens":1024,"messages":[{"role":"user","content":"你好"}]}\'',
+      compat: 'Messages API'
+    },
+    pitfalls: ['促销价已过期，按 $3/$15 做预算。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'claude-haiku-4-5',
+    name: 'Claude Haiku 4.5',
+    vendor: 'Anthropic',
+    kind: 'api',
+    tier: 'paid',
+    status: 'verified',
+    tags: ['chat', 'coding'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '200K tokens',
+    license: '商业 API',
+    price: '$1 / $5 每百万 token',
+    oneLiner: '最便宜最快的 Claude，适合高并发和子任务。',
+    bestFor: '分类、抽取、大批量轻度任务；在多模型架构里做「小工」。',
+    install: null,
+    api: {
+      signup: 'console.anthropic.com',
+      key: 'Settings → API Keys',
+      baseUrl: 'https://api.anthropic.com',
+      modelId: 'claude-haiku-4-5-20251001',
+      curl: 'curl https://api.anthropic.com/v1/messages \\\n  -H "x-api-key: $ANTHROPIC_API_KEY" \\\n  -H "anthropic-version: 2023-06-01" \\\n  -H "content-type: application/json" \\\n  -d \'{"model":"claude-haiku-4-5-20251001","max_tokens":1024,"messages":[{"role":"user","content":"你好"}]}\'',
+      compat: 'Messages API'
+    },
+    pitfalls: ['200K 上下文，比 Opus/Sonnet 的 1M 小很多，长文档别用它。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'deepseek-official',
+    name: 'DeepSeek 官方 API',
+    vendor: 'DeepSeek',
+    kind: 'api',
+    tier: 'paid',
+    status: 'community',
+    tags: ['coding', 'reasoning', 'chat'],
+    hw: [],
+    vram: '无需本地算力',
+    ctx: '128K-1M（视模型）',
+    license: '商业 API',
+    price: '低价档（国内最具性价比之一）',
+    oneLiner: '国内直连、OpenAI 兼容、价格低，代码+推理的性价比之选。',
+    bestFor: '不想折腾代理又要不错能力的国内开发者。',
+    install: null,
+    api: {
+      signup: 'platform.deepseek.com 注册',
+      key: 'API Keys → 创建',
+      baseUrl: 'https://api.deepseek.com',
+      modelId: 'deepseek-chat / deepseek-reasoner（以控制台为准）',
+      curl: 'curl https://api.deepseek.com/chat/completions \\\n  -H "Authorization: Bearer $DEEPSEEK_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"model":"deepseek-chat","messages":[{"role":"user","content":"你好"}]}\'',
+      compat: '完全兼容 OpenAI 格式'
+    },
+    pitfalls: ['免费额度与速率政策调整频繁，以官方控制台实时信息为准。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'llama-4-maverick',
+    name: 'Llama 4 Maverick',
+    vendor: 'Meta（开源权重）',
+    kind: 'api',
+    tier: 'freemium',
+    status: 'community',
+    tags: ['chat', 'vision', 'coding'],
+    hw: ['tserver'],
+    vram: '',
+    ctx: '1M',
+    license: 'Llama 4 许可',
+    price: '免费额度（Groq / NIM）· 付费约 $0.15/M',
+    oneLiner: '开源 MoE 里的多模态代表，1M 上下文 + 原生视觉，走 Groq 几乎白嫖。',
+    bestFor: '要开源可迁移、又要长上下文 + 看图能力的项目。',
+    install: null,
+    api: {
+      signup: 'Groq（console.groq.com）或 NVIDIA NIM（build.nvidia.com）注册即可，无需信用卡。',
+      key: 'Groq 控制台 → API Keys → Create Key（gsk_ 开头）。',
+      baseUrl: 'https://api.groq.com/openai/v1',
+      modelId: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+      curl: 'curl https://api.groq.com/openai/v1/chat/completions \\\n  -H "Authorization: Bearer $GROQ_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"model":"meta-llama/llama-4-maverick-17b-128e-instruct","messages":[{"role":"user","content":"你好"}]}\'',
+      compat: 'OpenAI 兼容'
+    },
+    pitfalls: ['各家托管的模型 ID 不一致，务必以所用平台的「模型代码」列为准，别抄显示名。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'qwen3-8-flash-next',
+    name: 'Qwen3.8 Flash Next',
+    vendor: '阿里 通义千问',
+    kind: 'api',
+    tier: 'freemium',
+    status: 'community',
+    tags: ['chat', 'coding', 'longctx'],
+    hw: ['tserver'],
+    vram: '',
+    ctx: '1M',
+    license: 'Apache 2.0',
+    price: '按量计费，Flash 档极便宜',
+    oneLiner: '128GB 级 MoE，激活参数小所以便宜又快，中文场景性价比最高的云端档。',
+    bestFor: '中文长文档处理、批量调用、对成本敏感的线上服务。',
+    install: null,
+    api: {
+      signup: '阿里云百炼（bailian.console.aliyun.com）开通 DashScope。',
+      key: '百炼控制台 → API-KEY 管理 → 创建（sk- 开头）。',
+      baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+      modelId: 'qwen3.8-flash-next（以控制台模型列表为准）',
+      curl: 'curl https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions \\\n  -H "Authorization: Bearer $DASHSCOPE_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"model":"qwen3.8-flash-next","messages":[{"role":"user","content":"你好"}]}\'',
+      compat: 'OpenAI 兼容'
+    },
+    pitfalls: ['模型代号迭代快（Flash / Flash Next / Plus 容易混），填之前先在控制台确认当前代号。'],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'kimi-k3',
+    name: 'Kimi K3',
+    vendor: 'Moonshot AI（月之暗面）',
+    kind: 'api',
+    tier: 'paid',
+    status: 'community',
+    tags: ['agent', 'coding', 'longctx'],
+    hw: ['tserver'],
+    vram: '',
+    ctx: '1M',
+    license: '开源权重（Modified MIT）',
+    price: '按量计费，输出约 $15/M',
+    oneLiner: '全球最大开源模型（约 2.8T 参数 MoE），Arena Code Elo 全球第二。',
+    bestFor: '长程 Agent、超大代码库理解、需要「不迷路」的多步任务。',
+    install: null,
+    api: {
+      signup: 'Moonshot 开放平台（platform.moonshot.cn）注册并实名。',
+      key: '控制台 → API Key 管理 → 新建（sk- 开头）。',
+      baseUrl: 'https://api.moonshot.cn/v1',
+      modelId: 'kimi-k3（以控制台模型列表为准）',
+      curl: 'curl https://api.moonshot.cn/v1/chat/completions \\\n  -H "Authorization: Bearer $MOONSHOT_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"model":"kimi-k3","messages":[{"role":"user","content":"你好"}]}\'',
+      compat: 'OpenAI 兼容'
+    },
+    pitfalls: [
+      'Kimi 消费者端 App 与开放平台是两套账号，App 里拿不到 API Key。',
+      '权重体积巨大，本地自部署基本不现实，走 API。'
+    ],
+    updated: '2026-09-11'
+  },
+  {
+    id: 'minimax-m3',
+    name: 'MiniMax-M3',
+    vendor: 'MiniMax（稀宇）',
+    kind: 'api',
+    tier: 'freemium',
+    status: 'community',
+    tags: ['agent', 'coding', 'chat'],
+    hw: ['tserver'],
+    vram: '',
+    ctx: '1M',
+    license: '开源权重',
+    price: '有免费额度，按量计费',
+    oneLiner: '国产开源 MoE 里的 Agent 强手，工具调用稳定、长链路不跑偏。',
+    bestFor: 'Agent 工作流、自动化脚本编排、需要频繁调工具的场景。',
+    install: null,
+    api: {
+      signup: 'MiniMax 开放平台（platform.minimaxi.com）注册。',
+      key: '账户管理 → 接口密钥 → 创建新的密钥。',
+      baseUrl: 'https://api.minimaxi.com/v1',
+      modelId: 'MiniMax-M3（以控制台模型列表为准）',
+      curl: 'curl https://api.minimaxi.com/v1/chat/completions \\\n  -H "Authorization: Bearer $MINIMAX_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"model":"MiniMax-M3","messages":[{"role":"user","content":"你好"}]}\'',
+      compat: 'OpenAI 兼容'
+    },
+    pitfalls: ['模型名大小写敏感，MiniMax-M3 与 minimax-m3 在不同平台要求不同，以文档为准。'],
+    updated: '2026-09-11'
+  }
+];
+
+/* ---------- 通用教程：从零到跑通（给完全不懂的人） ---------- */
+const BASICS = [
+  {
+    id: 'b1',
+    title: '第 1 步：装 Ollama（本地模型的唯一入口）',
+    body: 'Ollama 把「下载模型 + 加载 + 开 API 服务」三件事合成一条命令。Windows / macOS 去 ollama.com 下载安装包双击即可，Linux 用 curl -fsSL https://ollama.com/install.sh | sh。\n装完在终端输入 ollama --version，能出版本号就成了。',
+    cmd: 'ollama --version'
+  },
+  {
+    id: 'b2',
+    title: '第 2 步：先把模型目录挪出 C 盘（90% 的人踩这个坑）',
+    body: '模型默认存在 C 盘，一个 14B 就是 9GB，几个模型就把系统盘撑爆。装完第一件事：设置环境变量 OLLAMA_MODELS 指向你的大容量盘（比如 J:\\ollama-models），然后重启 Ollama。',
+    cmd: '# Windows PowerShell（管理员）\nsetx OLLAMA_MODELS "J:\\ollama-models" /M\n# 重启 Ollama 后生效'
+  },
+  {
+    id: 'b3',
+    title: '第 3 步：拉模型并跑通第一句话',
+    body: 'pull 是下载，run 是下载+进入对话。第一次 run 会自动 pull，之后直接用 run 即可。跑起来后随便问一句，能出字就说明链路通了。',
+    cmd: 'ollama run qwen3:14b\n>>> 用一句话解释什么是向量数据库'
+  },
+  {
+    id: 'b4',
+    title: '第 4 步：让它变成一个 API（这样所有软件都能用）',
+    body: 'Ollama 默认已经在 localhost:11434 开了 OpenAI 兼容的 API。这意味着任何支持 OpenAI 的软件，只要把 base_url 改成它、api_key 随便填，就能用你的本地模型——不花一分钱、数据不出本机。',
+    cmd: 'from openai import OpenAI\nclient = OpenAI(base_url="http://localhost:11434/v1", api_key="ollama")\nr = client.chat.completions.create(\n    model="qwen3:14b",\n    messages=[{"role":"user","content":"你好"}]\n)\nprint(r.choices[0].message.content)'
+  },
+  {
+    id: 'b5',
+    title: '第 5 步：接到日常软件里',
+    body: '推荐三个现成客户端，都不用写代码：\n• Cherry Studio / ChatBox —— 聊天客户端，填 base_url + 模型名即可，本地和云端模型统一管理。\n• Continue / Cline —— 写代码用，VS Code 插件，接本地模型做补全和 agent。\n• ComfyUI —— 做图/视频工作流里需要文本理解时，可接本地 LLM。\n填法都一样：provider 选 OpenAI 兼容，base_url 填 http://localhost:11434/v1，key 填 ollama。',
+    cmd: ''
+  },
+  {
+    id: 'b6',
+    title: '第 6 步：判断「我的电脑到底能跑多大」',
+    body: '经验公式：Q4 量化下，模型体积(GB) ≈ 参数量(B) × 0.6。\n再加 1-2GB 给上下文和缓存。\n所以：8B ≈ 5GB、14B ≈ 9GB、27B ≈ 16-18GB、32B ≈ 20GB。\n最关键的一条：模型必须能 100% 装进显存。一旦超出触发 CPU 卸载，速度会掉 3-10 倍——16GB 卡上跑 20B(13GB) 是 139 tok/s，跑 120B(66GB) 只剩 12 tok/s。宁可小一号，不要卸载。',
+    cmd: '# 实时看显存占用\nnvidia-smi -l 1'
+  }
+];
+
+/* ---------- 实验室工单状态 ---------- */
+const TICKET_STATUS = {
+  open: { label: '待验证', color: '#f0a020', desc: '已收到，还没测' },
+  testing: { label: '测试中', color: '#4a9eff', desc: '站长正在实机验证' },
+  resolved: { label: '已验证', color: '#30c85e', desc: '已实测并给出结论' },
+  ignored: { label: '不采纳', color: '#8b8b8b', desc: '暂不处理或超出范围' }
+};
+
+/* ============================================================
+ * 全球大模型 Top 50 排行榜
+ * 排序方法：以 airankings（7 家独立榜单「奖牌榜」聚合，Sep 9 2026）为基准，
+ *           交叉校验 llm-stats 综合指数（Sep 9 2026）与 BenchLM BenchAlign v5.2（Sep 3 2026）。
+ * score 为归一化后的本站综合分（满分 100），仅用于横向对比，非任何官方分数。
+ * 字段：pros=优势 / best=最适合做什么 / avoid=别拿它做什么
+ * ============================================================ */
+const TOP50 = [
+  {
+    rank: 1, name: 'GPT-6 Astra', vendor: 'OpenAI', accent: '#6b8afd',
+    score: 98.9, scoreNote: 'llm-stats 综合指数 60.3（第 1）· llmboard 98.89（第 1）',
+    ctx: '1M', price: '付费 · 高端档', open: false, modality: '文本 / 图像 / 视频',
+    pros: ['推理能力断层第一，llmboard 推理榜拿满分档', '综合指数领先第二名 4 分，各分项无短板', '长上下文 + 工具调用 + 多模态全线拉满'],
+    best: '要「一次做对」的硬任务：复杂推理、竞赛数学、跨领域综合分析。预算不是第一约束时的默认选择。',
+    avoid: '高并发批量调用——价格是这一档里最贵的，日常简单问答用它属于浪费。',
+    linkTo: 'gpt6-astra'
+  },
+  {
+    rank: 2, name: 'Claude Fable 5.1', vendor: 'Anthropic', accent: '#a78bfa',
+    score: 96.4, scoreNote: 'BenchLM 82.58（第 1）· llm-stats 第 2 · Artificial Analysis 第 1',
+    ctx: '1M', price: '付费 · 高端档', open: false, modality: '文本 / 图像',
+    pros: ['长程 Agent 表现公认第一，几十步链路不迷路', '三个独立榜单同时进前二，稳定性最好', '指令遵循极其严格，格式输出几乎不会跑偏'],
+    best: '长链路自动化：多步调研、连续代码重构、需要「跑几小时也不跑偏」的 Agent 任务。',
+    avoid: '追求极致低价——它是顶配价，简单任务用 Sonnet 5 或 Terra 更划算。',
+    linkTo: 'claude-fable-5-1'
+  },
+  {
+    rank: 3, name: 'Claude Opus 5', vendor: 'Anthropic', accent: '#a78bfa',
+    score: 95.8, scoreNote: 'Arena Code Elo 1711.88（全球第一）· BenchLM 82.13（第 3）',
+    ctx: '500K', price: '付费 · 高端档', open: false, modality: '文本 / 图像',
+    pros: ['编码能力全球第一，Arena Code Elo 断层领先', '大型代码库理解与跨文件重构最稳', '写作质感自然，少有「AI 味」'],
+    best: '严肃的软件工程：大型仓库重构、疑难 bug 定位、需要改动几十个文件的任务。',
+    avoid: '纯聊天闲聊、批量短文本处理——杀鸡用牛刀。',
+    linkTo: 'claude-opus-5'
+  },
+  {
+    rank: 4, name: 'GPT-5.6 Sol', vendor: 'OpenAI', accent: '#6b8afd',
+    score: 94.6, scoreNote: 'llm-stats 55.1（第 3）· BenchLM 81.78（第 5）',
+    ctx: '1M', price: '付费 · 中高端', open: false, modality: '文本 / 图像',
+    pros: ['综合分紧咬第一梯队，价格比 Astra 低一档', '响应速度明显快于 Astra，交互式体验好', '工具调用成功率高，适合做线上服务引擎'],
+    best: '生产环境的通用引擎——要接近顶配的智能，又要能扛并发和延迟。',
+    avoid: '极限推理题（那还是 Astra 的活）。',
+    linkTo: 'gpt56-sol'
+  },
+  {
+    rank: 5, name: 'Muse Spark 1.3', vendor: 'Meta', accent: '#34d3c4',
+    score: 93.2, scoreNote: 'llm-stats 55.1（第 4）· llmboard 90.82（第 5）',
+    ctx: '1M', price: '付费 · 中端', open: false, modality: '文本 / 图像',
+    pros: ['Meta 当前旗舰，综合分挤进前五', '单位 token 成本远低于 OpenAI / Anthropic 同档', '创意写作与开放性生成评价突出'],
+    best: '预算敏感又要旗舰级质量的项目：内容批量生成、营销文案、创意脑暴。',
+    avoid: '需要严格格式 / 严谨推理的工程类任务。',
+    linkTo: null
+  },
+  {
+    rank: 6, name: 'Claude Fable 5', vendor: 'Anthropic', accent: '#a78bfa',
+    score: 92.8, scoreNote: 'LMArena 第 1 · BenchLM 82.23（第 2）· llm-stats 54.5',
+    ctx: '500K', price: '付费 · 高端档', open: false, modality: '文本 / 图像',
+    pros: ['LMArena 盲测第一，人类偏好度最高', '对话自然度与「懂你没说出口的话」的能力最强', '长文档处理稳定'],
+    best: '需要「读起来像人写的」的场景：对外文案、客户沟通、长篇报告润色。',
+    avoid: '纯代码工程（让位给 Opus 5）。',
+    linkTo: null
+  },
+  {
+    rank: 7, name: 'Claude Mythos', vendor: 'Anthropic', accent: '#a78bfa',
+    score: 92.1, scoreNote: 'llmboard Coding 98.82（第 1）· Knowledge 99.27（第 1）',
+    ctx: '500K', price: '付费 · 高端档', open: false, modality: '文本 / 图像',
+    pros: ['编码榜与知识榜双料第一', '事实性问答准确率极高，幻觉率低', '在安全 / 合规要求高的场景表现稳'],
+    best: '知识密集型任务：专业领域问答、需要引用准确事实的报告、合规审查辅助。',
+    avoid: '预算有限时的通用聊天。',
+    linkTo: null
+  },
+  {
+    rank: 8, name: 'Kimi K3', vendor: 'Moonshot AI（月之暗面）', accent: '#f5a524',
+    score: 90.9, scoreNote: 'Arena Code Elo 1681.75（全球第二）· 保留 96% 顶配分、输出价低 70%',
+    ctx: '1M', price: '付费 · 中端（输出约 $15/M）', open: true, modality: '文本',
+    pros: ['全球最大开源模型（约 2.8T 参数 MoE）', '性价比之王：96% 的顶配能力、30% 的价格', '开源权重可自部署，国产第一梯队'],
+    best: '既要强又要省：长程 Agent、超大代码库理解、需要自建部署的企业。',
+    avoid: '多模态任务（K3 是纯文本）；超低延迟实时交互。',
+    linkTo: 'kimi-k3'
+  },
+  {
+    rank: 9, name: 'GLM-5.3', vendor: 'Z.ai（智谱）', accent: '#34d3c4',
+    score: 89.4, scoreNote: 'llm-stats 53.4（第 8）· Artificial Analysis 第 7',
+    ctx: '1M', price: '付费 · 中端', open: true, modality: '文本',
+    pros: ['国产闭源 + 开源双线，综合分稳居前十', '1M 上下文，长文档处理能力强', '中文语境理解优于多数海外模型'],
+    best: '中文长文档、政企场景、需要国产可控的方案。',
+    avoid: '多模态（视觉要单独用 GLM-5V 系列）。',
+    linkTo: null
+  },
+  {
+    rank: 10, name: 'DeepSeek V4 Pro', vendor: 'DeepSeek', accent: '#6b8afd',
+    score: 88.6, scoreNote: 'llm-stats 52.4（第 10）· DeepSeek-V4-Pro-0813',
+    ctx: '1M', price: '付费 · 中端', open: true, modality: '文本',
+    pros: ['开源权重，可自部署', '推理 / 数学能力在同价位里几乎没有对手', '1M 上下文 + 极低单价'],
+    best: '数学与推理密集的批量任务、预算有限但要求硬能力的研发场景。',
+    avoid: '需要多模态输入；对响应速度极端敏感的实时对话。',
+    linkTo: null
+  },
+  {
+    rank: 11, name: 'Qwen3.8 Max', vendor: '阿里巴巴', accent: '#f2685f',
+    score: 87.9, scoreNote: 'Arena Code Elo 1667（全球第三 / 国产第二）',
+    ctx: '1M', price: '付费 · 中端', open: false, modality: '文本 / 图像',
+    pros: ['国产全能王，中文能力顶尖', '编码分全球第三，仅次于 Opus 5 与 Kimi K3', '阿里生态（百炼）接入最顺，国内延迟低'],
+    best: '国内业务、中文内容生产、需要本地化支持与低延迟的线上服务。',
+    avoid: '需要海外部署 / 英文创意写作的场景。',
+    linkTo: null
+  },
+  {
+    rank: 12, name: 'Hy4 preview', vendor: '腾讯混元', accent: '#34d3c4',
+    score: 87.2, scoreNote: 'BenchLM 78.48 · 当前最佳开源权重模型 · Code Arena WebDev 第 6',
+    ctx: '1M', price: '付费 · 中端（约 $1.67/M）', open: true, modality: '文本',
+    pros: ['770B 总参 / 49B 激活，MoE 效率极高', '开源权重里评分最高，可自部署', 'WebDev 类任务排名快速上升（第 28 → 第 6）'],
+    best: '想要「开源可自部署」又不想牺牲太多智能的团队；前端 / Web 开发任务。',
+    avoid: '多模态；需要成熟稳定 SLA 的生产环境（preview 版仍在迭代）。',
+    linkTo: null
+  },
+  {
+    rank: 13, name: 'Gemini 3.8 Flash', vendor: 'Google', accent: '#f5a524',
+    score: 86.5, scoreNote: 'airankings 第 10 · LMArena 第 4 · Vals.ai 第 3',
+    ctx: '1M', price: '免费额度 + 付费', open: false, modality: '文本 / 图像 / 视频 / 音频',
+    pros: ['原生全模态：图、视频、音频一个模型全吃', '1M 上下文，且免费档额度慷慨', 'Google 生态（AI Studio / Vertex）接入最省事'],
+    best: '视频理解、超长多模态文档、需要免费额度起步的个人项目。',
+    avoid: '纯文本推理（不如 DeepSeek / Astra）；国内直连需配代理。',
+    linkTo: 'gemini-ai-studio'
+  },
+  {
+    rank: 14, name: 'Claude Opus 4.8', vendor: 'Anthropic', accent: '#a78bfa',
+    score: 85.7, scoreNote: 'LiveBench 第 1 · Vellum 第 5',
+    ctx: '500K', price: '付费 · 高端档', open: false, modality: '文本 / 图像',
+    pros: ['LiveBench 第一，抗污染评测表现最好', '长上下文下的信息检索准确', '稳定性经过长时间验证'],
+    best: '需要抗「评测泄漏」的真实任务评测、长文档信息抽取。',
+    avoid: '新项目优先考虑 Opus 5，性价比更好。',
+    linkTo: null
+  },
+  {
+    rank: 15, name: 'GLM-5.3 Flash', vendor: 'Z.ai（智谱）', accent: '#34d3c4',
+    score: 84.9, scoreNote: '输入 $0.07/M · 1M 上下文 · Design Arena 第 4',
+    ctx: '1M', price: '免费额度 + 付费（输入 $0.07/M）', open: true, modality: '文本',
+    pros: ['1M 上下文里最便宜的一档，输入 $0.07/M', '有免费额度，个人项目几乎零成本起步', '中文指令遵循好，MIT 系许可友好'],
+    best: '长文档批处理、Agent 循环调用、成本敏感的高频场景。',
+    avoid: '看图（这是纯文本模型，视觉要 GLM-5V-Turbo）。',
+    linkTo: 'glm-5-3-flash'
+  },
+  {
+    rank: 16, name: 'GPT-5.6 Terra', vendor: 'OpenAI', accent: '#6b8afd',
+    score: 84.1, scoreNote: '约 $0.035/task · LMArena 第 11',
+    ctx: '400K', price: '付费 · 中低端', open: false, modality: '文本 / 图像',
+    pros: ['OpenAI 系里单位成本最优的一档', '日常任务质量足够，速度快', '与 Sol / Astra 同 API，切换零成本'],
+    best: '日常对话、批量摘要、分类打标这类「量大但不难」的任务。',
+    avoid: '复杂推理、需要长链路规划的任务。',
+    linkTo: 'gpt56-terra'
+  },
+  {
+    rank: 17, name: 'Claude Sonnet 5', vendor: 'Anthropic', accent: '#a78bfa',
+    score: 83.4, scoreNote: 'Vellum 第 6 · LiveBench 第 7',
+    ctx: '500K', price: '付费 · 中端', open: false, modality: '文本 / 图像',
+    pros: ['Anthropic 中端主力，质量/价格平衡点', '写作自然度接近 Fable 系', '响应快，适合交互式产品'],
+    best: '面向用户的产品内嵌 AI：客服、写作助手、需要「文风好」的场景。',
+    avoid: '极限编码（Opus 5）与极限省钱（Terra / Flash 系）。',
+    linkTo: 'claude-sonnet-5'
+  },
+  {
+    rank: 18, name: 'Grok 4.6', vendor: 'xAI', accent: '#f2685f',
+    score: 82.6, scoreNote: 'Artificial Analysis 第 8',
+    ctx: '2M', price: '付费 · 中端', open: false, modality: '文本 / 图像',
+    pros: ['2M 上下文，是榜单里最长的之一', '实时信息获取能力强（X 平台数据）', '幽默 / 非主流风格任务有特色'],
+    best: '需要最新时事信息、超长上下文（2M）、或个性化风格输出。',
+    avoid: '严谨的事实性任务与合规场景。',
+    linkTo: null
+  },
+  {
+    rank: 19, name: 'DeepSeek V4 Flash', vendor: 'DeepSeek', accent: '#6b8afd',
+    score: 81.8, scoreNote: 'OpenRouter 周榜第一 · 首周 7.1 万亿 token · 输出 $0.28/M',
+    ctx: '1.3M', price: '付费 · 低价（输出 $0.28/M）', open: true, modality: '文本 / 图像',
+    pros: ['OpenRouter 调用量周榜第一，社区验证最充分', '1.3M 上下文 + 原生视觉，Flash 档里少见', '价格极低，适合跑量'],
+    best: '高频批量任务、个人项目主力模型、需要视觉又不想花大钱。',
+    avoid: '需要最顶级推理质量的单次关键任务。',
+    linkTo: 'deepseek-v4-flash'
+  },
+  {
+    rank: 20, name: 'Gemini 3.7 Flash', vendor: 'Google', accent: '#f5a524',
+    score: 80.9, scoreNote: 'LMArena 第 7 · Vals.ai 第 9 · Design Arena 第 8',
+    ctx: '1M', price: '免费额度 + 付费', open: false, modality: '文本 / 图像 / 视频',
+    pros: ['Flash 档里多模态最完整（含视频）', '免费额度 + 低价，入门零门槛', '设计与前端类任务评价好'],
+    best: '多模态原型验证、设计稿理解、个人免费起步的 AI 应用。',
+    avoid: '国内直连（需代理）；纯文本推理任务。',
+    linkTo: null
+  },
+  {
+    rank: 21, name: 'Llama 4 Maverick', vendor: 'Meta', accent: '#34d3c4',
+    score: 80.2, scoreNote: '人工分析开源榜长期居首 · 1M 上下文',
+    ctx: '1M', price: '开源权重 · 自部署免费', open: true, modality: '文本 / 图像',
+    pros: ['Meta 开源旗舰，开源榜长期居首', '1M 上下文，多语言与长文档处理强', '本地部署生态最成熟，教程最多'],
+    best: '想要「开源可自部署」又要接近闭源旗舰质量的团队；本地私有化部署首选。',
+    avoid: '需要顶配推理 / 最新视频多模态的场景。',
+    linkTo: null
+  },
+  {
+    rank: 22, name: 'Qwen3-235B-A22B', vendor: '阿里巴巴', accent: '#f2685f',
+    score: 79.5, scoreNote: '国产开源天花板 · MoE 仅激活 22B',
+    ctx: '128K', price: '开源权重 · 阿里云低价', open: true, modality: '文本',
+    pros: ['国产开源天花板，MoE 仅激活 22B 推理极快', '中英文均衡，代码与数学表现突出', '阿里云百炼部署最顺，国内延迟低'],
+    best: '中文业务自部署、需要高吞吐的批量推理服务。',
+    avoid: '超长上下文（仅 128K）；纯视觉任务。',
+    linkTo: null
+  },
+  {
+    rank: 23, name: 'DeepSeek V3.1', vendor: 'DeepSeek', accent: '#6b8afd',
+    score: 78.9, scoreNote: '开源推理 / 数学第一梯队 · 671B MoE',
+    ctx: '128K', price: '开源权重 · 输出约 $0.4/M', open: true, modality: '文本',
+    pros: ['开源主力，推理 / 数学稳居开源第一梯队', '671B 总参 MoE，激活 37B 性价比极高', 'Ollama / vLLM 社区工具链支持最全'],
+    best: '研发类推理、数学题、需要开源且硬核的任务。',
+    avoid: '多模态；对延迟极端敏感的实时对话。',
+    linkTo: null
+  },
+  {
+    rank: 24, name: 'Grok 4', vendor: 'xAI', accent: '#f2685f',
+    score: 78.3, scoreNote: 'X 实时数据接入 · 256K 上下文',
+    ctx: '256K', price: '付费 · 中端', open: false, modality: '文本 / 图像',
+    pros: ['X 平台实时数据接入，时事问答最强', '256K 上下文，长文与代码都不弱', '推理分紧追第一梯队'],
+    best: '需要最新资讯、社交媒体舆情、实时信息的任务。',
+    avoid: '严谨合规场景（风格偏自由）。',
+    linkTo: null
+  },
+  {
+    rank: 25, name: 'Mistral Large 3', vendor: 'Mistral AI', accent: '#34d3c4',
+    score: 77.6, scoreNote: '欧洲最强闭源 · 多语言突出',
+    ctx: '128K', price: '付费 · 中端', open: false, modality: '文本 / 图像',
+    pros: ['欧洲最强闭源模型，多语言（法 / 德）突出', '128K 上下文，企业级 API 稳定', '函数调用与结构化输出成熟'],
+    best: '面向欧洲市场、多语言企业应用、合规要求高的业务。',
+    avoid: '追求极致性价比（比开源同档贵）。',
+    linkTo: null
+  },
+  {
+    rank: 26, name: 'GPT-5.6 mini', vendor: 'OpenAI', accent: '#6b8afd',
+    score: 77.0, scoreNote: 'OpenAI 系低价主力 · 200K 上下文',
+    ctx: '200K', price: '付费 · 中低端', open: false, modality: '文本 / 图像',
+    pros: ['OpenAI 系低价主力，质量接近 Sol 的 90%', '200K 上下文，速度快延迟低', '与 GPT 系列 API 无缝切换'],
+    best: '量大、单价敏感、又要 OpenAI 生态的批量任务。',
+    avoid: '极限复杂推理（让位 Sol / Astra）。',
+    linkTo: null
+  },
+  {
+    rank: 27, name: 'Gemini 3 Pro', vendor: 'Google', accent: '#f5a524',
+    score: 76.4, scoreNote: '原生全模态旗舰 · 视频理解最强',
+    ctx: '1M', price: '付费 · 高端档', open: false, modality: '文本 / 图像 / 视频 / 音频',
+    pros: ['原生全模态旗舰，视频理解业界最强', '1M 上下文，超长多模态文档一次读完', 'Vertex / AI Studio 企业接入成熟'],
+    best: '需要看视频、听音频、吃超长多模态资料的专业分析。',
+    avoid: '国内直连（需代理）；预算敏感场景。',
+    linkTo: null
+  },
+  {
+    rank: 28, name: 'Claude Haiku 5', vendor: 'Anthropic', accent: '#a78bfa',
+    score: 75.8, scoreNote: 'Anthropic 最便宜档 · 速度极快',
+    ctx: '200K', price: '付费 · 低价', open: false, modality: '文本 / 图像',
+    pros: ['Anthropic 最便宜档，速度极快', '写作自然度仍优于多数同价位模型', '适合高并发嵌入产品'],
+    best: '产品内嵌的轻量 AI、高并发客服、分类打标。',
+    avoid: '复杂推理与长链路规划（让位 Sonnet / Opus）。',
+    linkTo: null
+  },
+  {
+    rank: 29, name: '文心 5.0（ERNIE 5.0）', vendor: '百度（文心）', accent: '#34d3c4',
+    score: 75.2, scoreNote: '国产闭源旗舰 · 中文检索强',
+    ctx: '256K', price: '付费 · 中端', open: false, modality: '文本 / 图像',
+    pros: ['国产闭源旗舰，中文知识与检索强', '百度搜索 + 文心一言生态打通', '政企合规场景落地案例最多'],
+    best: '国内政企、搜索增强、合规要求的业务。',
+    avoid: '海外部署；英文创意写作。',
+    linkTo: null
+  },
+  {
+    rank: 30, name: 'Command A', vendor: 'Cohere', accent: '#6b8afd',
+    score: 74.6, scoreNote: '企业 RAG 与检索增强老牌强者',
+    ctx: '128K', price: '付费 · 中端', open: false, modality: '文本',
+    pros: ['企业 RAG 与检索增强场景的老牌强者', '长文档 grounding 准确，幻觉率低', '多语言 Embed / 重排一体化'],
+    best: '企业知识库问答、检索增强生成（RAG）管线。',
+    avoid: '通用创意写作；多模态。',
+    linkTo: null
+  },
+  {
+    rank: 31, name: 'MiniMax M3', vendor: 'MiniMax（稀宇）', accent: '#34d3c4',
+    score: 74.0, scoreNote: '国产开源 · 1M 上下文 · 多模态生态',
+    ctx: '1M', price: '开源权重 · 低价 API', open: true, modality: '文本 / 图像',
+    pros: ['国产开源，1M 上下文长文本强', '语音 / 视频多模态生态完整', 'API 价格低，社区活跃'],
+    best: '中文长文、音视频多模态、成本敏感的项目。',
+    avoid: '极限编码（让位 Qwen / DeepSeek）。',
+    linkTo: null
+  },
+  {
+    rank: 32, name: 'Nemotron Ultra 253B', vendor: 'NVIDIA', accent: '#6b8afd',
+    score: 73.4, scoreNote: 'NVIDIA 开源旗舰 · GPU 推理优化最好',
+    ctx: '128K', price: '开源权重 · 自部署免费', open: true, modality: '文本',
+    pros: ['NVIDIA 开源旗舰，GPU 推理优化最好', '253B MoE，企业级 API 稳定', '与 CUDA / TensorRT-LLM 深度适配'],
+    best: '在 N 卡集群上自部署、追求推理吞吐的企业。',
+    avoid: '需要多模态；消费级显卡跑不动。',
+    linkTo: null
+  },
+  {
+    rank: 33, name: 'Qwen3-Coder', vendor: '阿里巴巴', accent: '#f2685f',
+    score: 72.8, scoreNote: '专为代码而生 · 256K 上下文',
+    ctx: '256K', price: '开源权重 · 阿里云低价', open: true, modality: '文本',
+    pros: ['专为代码而生，仓库级补全与重构强', '256K 上下文，能吞下整个大项目', 'Agent 编码工具链（CLI）支持好'],
+    best: '自动化编码 Agent、IDE 补全、大仓库重构。',
+    avoid: '通用对话 / 创意写作（非其强项）。',
+    linkTo: null
+  },
+  {
+    rank: 34, name: '豆包 Pro（Doubao）', vendor: '字节跳动（豆包）', accent: '#f5a524',
+    score: 72.2, scoreNote: '字节生态打通 · 低价高吞吐',
+    ctx: '256K', price: '付费 · 低价', open: false, modality: '文本 / 图像',
+    pros: ['字节生态（抖音 / 飞书）打通，国内延迟极低', '低价高吞吐，适合海量调用', '中文口语化表达自然'],
+    best: '国内 C 端产品、海量低延迟对话、内容审核。',
+    avoid: '海外合规与多语言；极限推理。',
+    linkTo: null
+  },
+  {
+    rank: 35, name: 'Mistral 3', vendor: 'Mistral AI', accent: '#34d3c4',
+    score: 71.6, scoreNote: '轻量开源 · 单卡可跑',
+    ctx: '128K', price: '开源权重 · 自部署免费', open: true, modality: '文本',
+    pros: ['轻量开源，单卡可跑，部署门槛低', '欧洲数据合规友好', '指令遵循干净，适合做基座'],
+    best: '资源受限、要自部署且合规的轻量应用。',
+    avoid: '需要旗舰智能的硬任务。',
+    linkTo: null
+  },
+  {
+    rank: 36, name: 'Gemma 3（27B）', vendor: 'Google', accent: '#f5a524',
+    score: 71.0, scoreNote: 'Google 开源 · 单卡可跑且扎实',
+    ctx: '128K', price: '开源权重 · 自部署免费', open: true, modality: '文本 / 图像',
+    pros: ['Google 开源，单卡可跑且质量扎实', '多语言覆盖广，视觉理解可用', 'Kaggle / Colab 一键体验'],
+    best: '个人 / 小团队自部署、多语言轻量应用。',
+    avoid: '超长上下文；顶级推理。',
+    linkTo: null
+  },
+  {
+    rank: 37, name: 'Kimi K2', vendor: 'Moonshot AI（月之暗面）', accent: '#f5a524',
+    score: 70.4, scoreNote: 'K3 上一代旗舰 · 开源生态成熟',
+    ctx: '256K', price: '开源权重 · 低价 API', open: true, modality: '文本',
+    pros: ['K3 的上一代旗舰，开源生态成熟', '256K 长上下文，Agent 工具调用稳', '中文长文处理口碑好'],
+    best: '长文 Agent、需要稳定开源长上下文的项目。',
+    avoid: '追求最新最高分（已被 K3 取代）。',
+    linkTo: null
+  },
+  {
+    rank: 38, name: '阶跃 Step-3', vendor: '阶跃星辰', accent: '#34d3c4',
+    score: 69.8, scoreNote: '国产开源新锐 · 多模态与推理兼顾',
+    ctx: '128K', price: '开源权重 · 低价 API', open: true, modality: '文本 / 图像',
+    pros: ['国产开源新锐，多模态与推理兼顾', 'Step 系列工具链逐步完善', '中文场景优化到位'],
+    best: '中文多模态、想尝鲜国产开源新模型的团队。',
+    avoid: '生态成熟度不如 Qwen / DeepSeek。',
+    linkTo: null
+  },
+  {
+    rank: 39, name: 'Amazon Nova Pro', vendor: 'Amazon', accent: '#f2685f',
+    score: 69.2, scoreNote: 'AWS 原生 · 300K · 多模态',
+    ctx: '300K', price: '付费 · 中端', open: false, modality: '文本 / 图像 / 视频',
+    pros: ['AWS 原生，Bedrock 一键接入', '300K 长上下文，视频理解可用', '企业级 SLA 与合规完善'],
+    best: '已在 AWS 体系、要长上下文多模态的企业。',
+    avoid: '非 AWS 环境（迁移成本高）。',
+    linkTo: null
+  },
+  {
+    rank: 40, name: 'GPT-5.1', vendor: 'OpenAI', accent: '#6b8afd',
+    score: 68.6, scoreNote: '上一代旗舰 · 生态极成熟',
+    ctx: '200K', price: '付费 · 中端', open: false, modality: '文本 / 图像',
+    pros: ['上一代旗舰，稳定性与生态极成熟', '200K 上下文，工具调用可靠', '大量现成教程与集成'],
+    best: '求稳、要最大生态兼容的存量项目。',
+    avoid: '新项目优先 5.6 系列（更强更便宜）。',
+    linkTo: null
+  },
+  {
+    rank: 41, name: 'Gemini 3.5 Flash', vendor: 'Google', accent: '#f5a524',
+    score: 68.0, scoreNote: 'Flash 系低价主力 · 1M 上下文',
+    ctx: '1M', price: '免费额度 + 付费', open: false, modality: '文本 / 图像 / 视频',
+    pros: ['Flash 系低价主力，1M 上下文', '原生多模态，免费额度起步', '移动端 / 边缘场景优化好'],
+    best: '免费起步的多模态原型、移动端 AI。',
+    avoid: '需要顶级推理质量。',
+    linkTo: null
+  },
+  {
+    rank: 42, name: '零一万物 Yi-Large', vendor: '零一万物', accent: '#34d3c4',
+    score: 67.4, scoreNote: '国产开源 · 中英文均衡',
+    ctx: '128K', price: '开源权重 · 低价 API', open: true, modality: '文本',
+    pros: ['国产开源，中英文均衡', '长上下文版本可选，部署简单', 'API 价格友好'],
+    best: '中文业务自部署、成本敏感的通用服务。',
+    avoid: '多模态；顶级编码。',
+    linkTo: null
+  },
+  {
+    rank: 43, name: 'Mistral Codestral', vendor: 'Mistral AI', accent: '#34d3c4',
+    score: 66.8, scoreNote: '专注代码补全 · 80+ 语言',
+    ctx: '128K', price: '付费 · 中端', open: false, modality: '文本',
+    pros: ['专注代码补全，IDE 集成顺滑', '80+ 编程语言覆盖', '低延迟，本地化补全体验好'],
+    best: 'IDE 实时代码补全、小模型本地编码助手。',
+    avoid: '通用对话与多模态。',
+    linkTo: null
+  },
+  {
+    rank: 44, name: '百川 Baichuan4', vendor: '百川智能', accent: '#f5a524',
+    score: 66.2, scoreNote: '国产闭源 · 医疗 / 金融垂类强',
+    ctx: '128K', price: '付费 · 中端', open: false, modality: '文本 / 图像',
+    pros: ['国产闭源，中文医疗 / 金融垂类强', '128K 上下文，私有化部署方案成熟', '国内政企案例多'],
+    best: '中文垂类（医疗 / 金融）、政企私有化。',
+    avoid: '海外与多语言；顶级通用推理。',
+    linkTo: null
+  },
+  {
+    rank: 45, name: 'Claude Opus 4.5', vendor: 'Anthropic', accent: '#a78bfa',
+    score: 65.6, scoreNote: '上一代 Opus · 编码与写作仍强',
+    ctx: '200K', price: '付费 · 高端档', open: false, modality: '文本 / 图像',
+    pros: ['上一代 Opus，编码与写作仍强', '200K 上下文，稳定可靠', '存量项目兼容性好'],
+    best: '存量 Claude 项目、需要 Opus 级质量的稳妥选择。',
+    avoid: '新项目优先 Opus 5（更强更优）。',
+    linkTo: null
+  },
+  {
+    rank: 46, name: 'OLMo 2', vendor: 'AllenAI', accent: '#34d3c4',
+    score: 65.0, scoreNote: '完全开放（含训练数据）· 科研级',
+    ctx: '32K', price: '开源权重 · 自部署免费', open: true, modality: '文本',
+    pros: ['完全开放（含训练数据）的科研级开源', '可复现、可二次研究', '教学与论文首选'],
+    best: '学术研究、模型可解释性、训练复现。',
+    avoid: '生产环境（上下文短、无多模态）。',
+    linkTo: null
+  },
+  {
+    rank: 47, name: 'Perplexity Sonar', vendor: 'Perplexity', accent: '#6b8afd',
+    score: 64.4, scoreNote: '联网检索 + 引用溯源',
+    ctx: '128K', price: '付费 · 中端', open: false, modality: '文本',
+    pros: ['联网检索 + 引用溯源，答案可查', '实时信息最强之一', '适合事实型问答'],
+    best: '需要实时联网、带引用的事实问答。',
+    avoid: '闭门创意写作；长文生成。',
+    linkTo: null
+  },
+  {
+    rank: 48, name: 'Granite 4', vendor: 'IBM', accent: '#6b8afd',
+    score: 63.8, scoreNote: 'IBM 企业级开源 · 治理合规完善',
+    ctx: '128K', price: '开源权重 · 自部署免费', open: true, modality: '文本',
+    pros: ['IBM 企业级开源，治理与合规完善', '可商用协议友好', '企业集成（watsonx）成熟'],
+    best: '企业合规、可审计、要商用友好的自部署。',
+    avoid: '消费级创意；多模态。',
+    linkTo: null
+  },
+  {
+    rank: 49, name: 'Jamba 2', vendor: 'AI21', accent: '#34d3c4',
+    score: 63.2, scoreNote: 'SSM+Transformer 混合 · 256K 省显存',
+    ctx: '256K', price: '开源权重 · 低价 API', open: true, modality: '文本',
+    pros: ['SSM+Transformer 混合架构，长上下文省显存', '256K 长文处理成本低', '企业 API 稳定'],
+    best: '超长文档、要省显存的长上下文任务。',
+    avoid: '多模态；顶级推理。',
+    linkTo: null
+  },
+  {
+    rank: 50, name: 'Falcon 3', vendor: 'TII', accent: '#f5a524',
+    score: 62.6, scoreNote: 'TII 开源 · 阿语 / 英语双语',
+    ctx: '32K', price: '开源权重 · 自部署免费', open: true, modality: '文本',
+    pros: ['TII 开源，阿语 / 英语双语强', '轻量可单卡部署', '中东合规友好'],
+    best: '阿语市场、轻量自部署、双语应用。',
+    avoid: '中文场景；长上下文与多模态。',
+    linkTo: null
+  }
+];
+
+/* ============================================================
+ * 首屏引导卡片（3D 叠卡动效用）
+ * tab 字段对应 app.js 里的 state.tab
+ * ============================================================ */
+const INTRO_MODULES = [
+  {
+    id: 'rank', icon: '🏆', tag: 'TOP 50', accent: '#f5a524',
+    title: '全球排名 Top 50',
+    desc: '按 7 家独立榜单聚合排序，点开看每个模型的优势、该用来干什么、别用来干什么。',
+    cta: '看排行榜', tab: 'rank'
+  },
+  {
+    id: 'hw', icon: '🖥️', tag: '选模型', accent: '#6b8afd',
+    title: '按你的硬件选',
+    desc: '选个显存档位，直接告诉你该装哪 1-2 个本地模型。8 档从无独显到多卡服务器全覆盖。',
+    cta: '选我的显卡', tab: 'hw'
+  },
+  {
+    id: 'need', icon: '🎯', tag: '按场景', accent: '#34d3c4',
+    title: '按你要做的事选',
+    desc: '写代码 / Agent / 看图 / 推理 / 长文档……每个场景都给你「免费能用的」和「付费最强的」两套。',
+    cta: '选我的场景', tab: 'need'
+  },
+  {
+    id: 'lib', icon: '📦', tag: '检索', accent: '#a78bfa',
+    title: '模型库全检索',
+    desc: '全部收录模型，按本地 / API、免费 / 付费、能力标签交叉筛选，支持关键词搜索。',
+    cta: '进模型库', tab: 'lib'
+  },
+  {
+    id: 'basics', icon: '🚀', tag: '新手', accent: '#f2685f',
+    title: '新手 6 步跑通',
+    desc: '从零装 Ollama 到「所有软件都能调用你的本地模型」，命令可直接复制。',
+    cta: '开始 6 步', tab: 'basics'
+  },
+  {
+    id: 'lab', icon: '🧪', tag: '共建', accent: '#30c85e',
+    title: '实验室 · 实测回帖',
+    desc: '信息过期、命令跑不通、想看的模型没收录——留言，我实机测完把结论回帖在这里。',
+    cta: '去实验室', tab: 'lab'
+  }
+];
+
+
+/* ===== app.js ===== */
+/* ============================================================
+ * model-hub / app.js
+ * 交互层：查询 / 详情 / 实验室工单
+ * 数据持久化：localStorage（纯静态站无后端，工单存在本浏览器）
+ * ============================================================ */
+
+const LS_TICKETS = 'modelhub.tickets.v1';
+const LS_OWNER = 'modelhub.owner.v1';
+
+let state = {
+  tab: 'rank',
+  tier: null,
+  need: null,
+  q: '',
+  filterKind: 'all',
+  filterTier: 'all',
+  rankFilter: 'all',
+  tag: 'all',
+  tickets: [],
+  owner: false
+};
+
+/* ---------- 工具 ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+function copy(text, btn) {
+  const done = () => {
+    if (btn) { const o = btn.textContent; btn.textContent = '已复制'; setTimeout(() => btn.textContent = o, 1400); }
+    toast('已复制到剪贴板');
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallback(text, done));
+  } else fallback(text, done);
+}
+function fallback(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) { toast('复制失败，请手动选中'); }
+  document.body.removeChild(ta);
+}
+
+const statusTag = (k) => ({ verified: '已实测', community: '社区反馈', untested: '待实测' }[k] || k);
+const tierTag = (k) => ({ free: '免费', paid: '付费', freemium: '免费+付费' }[k] || k);
+const getModel = (id) => MODELS.find(m => m.id === id);
+
+/* ---------- 渲染：硬件查询 ---------- */
+function renderHW() {
+  const picked = state.tier ? TIERS.find(t => t.id === state.tier) : null;
+  let h = '<div class="tier-grid">';
+  TIERS.forEach(t => {
+    h += `<div class="card tier-card click ${state.tier === t.id ? 'star' : ''}" data-tier="${t.id}">
+      <div class="top"><span class="ic">${t.icon}</span><span class="nm">${esc(t.label)}</span></div>
+      <div class="hint">${esc(t.hint)}</div></div>`;
+  });
+  h += '</div>';
+
+  if (picked) {
+    h += `<div class="pick-box">
+      <div class="sec-title" style="margin-top:0">${esc(picked.label)} · 推荐</div>
+      <div class="rule">${esc(picked.rule)}</div>
+      <div class="note">${esc(picked.note)}</div>
+      <div class="pick-list">`;
+    picked.picks.forEach(id => { const m = getModel(id); if (m) h += modelCard(m, true); });
+    h += `</div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm ghost" data-goto="basics">不会装？看 6 步新手教程 →</button>
+        <button class="btn sm ghost" data-goto="lab">这个档位推荐得不准？去实验室留言</button>
+      </div>
+    </div>`;
+  } else {
+    h += `<div class="empty"><div class="ic">🖥️</div><p>先点上面一个档位，我告诉你该装哪 1-2 个模型</p></div>`;
+  }
+  return h;
+}
+
+/* ---------- 渲染：需求查询 ---------- */
+function renderNeed() {
+  let h = '<div class="tier-grid">';
+  NEEDS.forEach(n => {
+    h += `<div class="card tier-card click" data-need="${n.id}" style="${state.need === n.id ? 'border-color:var(--amber-dim);background:linear-gradient(180deg,#1a1712,var(--bg-1))' : ''}">
+      <div class="top"><span class="ic">${n.icon}</span><span class="nm">${esc(n.label)}</span></div></div>`;
+  });
+  h += '</div>';
+
+  if (state.need) {
+    const n = NEEDS.find(x => x.id === state.need);
+    h += `<div class="pick-box">
+      <div class="sec-title" style="margin-top:0">${esc(n.label)}</div>
+      <div class="note">${esc(n.why)}</div>`;
+    const row = (title, ids) => {
+      if (!ids || !ids.length) return '';
+      let s = `<div class="sec-title">${title}</div><div class="pick-list">`;
+      ids.forEach(id => { const m = getModel(id); if (m) s += modelCard(m, true); });
+      return s + '</div>';
+    };
+    h += row('免费方案', n.free);
+    h += row('付费最强', n.paid);
+    h += `<div style="margin-top:14px"><button class="btn sm ghost" data-goto="lab">有更好的推荐？去实验室告诉我</button></div></div>`;
+  } else {
+    h += `<div class="empty"><div class="ic">🎯</div><p>选一个你要做的事，我给你「免费能用的」和「付费最强的」两套方案</p></div>`;
+  }
+  return h;
+}
+
+/* ---------- 模型卡 ---------- */
+function modelCard(m, compact) {
+  const kv = [];
+  if (m.kind === 'local') {
+    if (m.vram) kv.push(`<b>显存</b> ${esc(m.vram)}`);
+    if (m.ctx) kv.push(`<b>上下文</b> ${esc(m.ctx)}`);
+    if (m.license) kv.push(`<b>许可</b> ${esc(m.license)}`);
+  } else {
+    if (m.ctx) kv.push(`<b>上下文</b> ${esc(m.ctx)}`);
+    kv.push(`<b>价格</b> ${esc(m.price)}`);
+  }
+  return `<div class="card m-card click" data-model="${m.id}">
+    <div class="hd">
+      <div><div class="nm">${esc(m.name)}</div><div class="vd">${esc(m.vendor)}</div></div>
+    </div>
+    <div class="one">${esc(m.oneLiner)}</div>
+    <div class="kv">${kv.join(' ')}</div>
+    <div class="tags">
+      <span class="tag ${m.tier}">${tierTag(m.tier)}</span>
+      <span class="tag ${m.status}">${statusTag(m.status)}</span>
+      <span class="tag">${m.kind === 'local' ? '本地' : 'API'}</span>
+    </div>
+  </div>`;
+}
+
+/* ---------- 渲染：模型库 ---------- */
+function renderLib() {
+  const list = MODELS.filter(m => {
+    if (state.filterKind !== 'all' && m.kind !== state.filterKind) return false;
+    if (state.filterTier !== 'all' && m.tier !== state.filterTier) return false;
+    if (state.tag !== 'all' && !m.tags.includes(state.tag)) return false;
+    if (state.q) {
+      const q = state.q.toLowerCase();
+      const hay = (m.name + m.vendor + m.oneLiner + m.bestFor + m.tags.join(' ')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const allTags = [...new Set(MODELS.flatMap(m => m.tags))];
+  let h = `<div class="filters">
+    <input type="text" id="q" placeholder="搜模型名 / 厂商 / 用途…" value="${esc(state.q)}">
+    <button class="chip ${state.filterKind === 'all' ? 'on' : ''}" data-fk="all">全部</button>
+    <button class="chip ${state.filterKind === 'local' ? 'on' : ''}" data-fk="local">本地部署</button>
+    <button class="chip ${state.filterKind === 'api' ? 'on' : ''}" data-fk="api">云端 API</button>
+    <button class="chip ${state.filterTier === 'free' ? 'on' : ''}" data-ft="free">免费</button>
+    <button class="chip ${state.filterTier === 'paid' ? 'on' : ''}" data-ft="paid">付费</button>
+  </div>
+  <div class="filters">${allTags.map(t =>
+    `<button class="chip ${state.tag === t ? 'on' : ''}" data-tag="${t}">${esc(t)}</button>`).join('')}
+  </div>
+  <div class="sec-title">共 ${list.length} 个模型</div>`;
+
+  if (!list.length) {
+    h += `<div class="empty"><div class="ic">🔍</div><p>没找到匹配的模型。<br>想要的我还没收录？<button class="btn sm" data-goto="lab" style="margin-top:10px">去实验室点名</button></p></div>`;
+  } else {
+    h += '<div class="pick-list">' + list.map(m => modelCard(m)).join('') + '</div>';
+  }
+  return h;
+}
+
+/* ---------- 渲染：全球 Top 50 排行榜 ---------- */
+const OPEN_TAG = (o) => o
+  ? '<span class="tag free">开源权重</span>'
+  : '<span class="tag paid">闭源</span>';
+
+function renderRank() {
+  let h = `<div class="lab-intro">
+    <b>排序方法：</b>以 airankings（7 家独立榜单「奖牌榜」聚合，2026-09-09）为基准，
+    交叉校验 llm-stats 综合指数与 BenchLM BenchAlign v5.2，归一化成本站综合分（满分 100）。
+    <b>点任意一行</b>看它的优势、最适合干什么、以及别拿它干什么。
+  </div>`;
+
+  h += `<div class="rank-tools">
+    <button class="chip ${state.rankFilter === 'all' ? 'on' : ''}" data-rf="all">全部 50</button>
+    <button class="chip ${state.rankFilter === 'open' ? 'on' : ''}" data-rf="open">仅开源权重</button>
+    <button class="chip ${state.rankFilter === 'free' ? 'on' : ''}" data-rf="free">有免费档</button>
+    <button class="chip ${state.rankFilter === 'cn' ? 'on' : ''}" data-rf="cn">国产模型</button>
+  </div>`;
+
+  const CN = ['Moonshot AI（月之暗面）', 'Z.ai（智谱）', 'DeepSeek', '阿里巴巴', '腾讯混元', 'MiniMax（稀宇）'];
+  const list = TOP50.filter(m => {
+    if (state.rankFilter === 'open' && !m.open) return false;
+    if (state.rankFilter === 'free' && !/免费/.test(m.price)) return false;
+    if (state.rankFilter === 'cn' && CN.indexOf(m.vendor) < 0) return false;
+    return true;
+  });
+
+  h += `<div class="rank-list">`;
+  list.forEach(m => {
+    const medal = m.rank <= 3 ? ' top' + m.rank : '';
+    h += `<div class="rank-row${medal} click" data-rank="${m.rank}" style="--ac:${m.accent}">
+      <div class="rk">${m.rank}</div>
+      <div class="rbody">
+        <div class="rhd">
+          <span class="rnm">${esc(m.name)}</span>
+          <span class="rvd">${esc(m.vendor)}</span>
+        </div>
+        <div class="rone">${esc(m.pros[0])}</div>
+        <div class="rtags">${OPEN_TAG(m.open)}<span class="tag">${esc(m.modality)}</span><span class="tag">${esc(m.ctx)}</span><span class="tag">${esc(m.price)}</span></div>
+      </div>
+      <div class="rscore">
+        <div class="sn">${m.score.toFixed(1)}</div>
+        <div class="sbar"><i style="width:${m.score}%;background:${m.accent}"></i></div>
+        <div class="sl">综合分</div>
+      </div>
+      <div class="rgo">›</div>
+    </div>`;
+  });
+  h += `</div>`;
+
+  h += `<div class="callout" style="margin-top:20px">
+    <b>怎么读这个榜：</b>综合分只做横向对比，不代表任何官方分数。
+    真要落地，先看 <b>适不适合你的场景</b>，再看价格——第 8 名的 Kimi K3 用 30% 的价格保留了 96% 的顶配能力，
+    对大多数人比第 1 名更实用。
+  </div>`;
+  return h;
+}
+
+/* ---------- Top50 详情 ---------- */
+function openTop(rank) {
+  const m = TOP50.find(x => x.rank === Number(rank));
+  if (!m) return;
+  let h = `<div class="panel-hd">
+    <button class="close" id="pClose">✕</button>
+    <div class="rk-big" style="color:${m.accent}">#${m.rank}</div>
+    <div class="nm">${esc(m.name)}</div>
+    <div class="vd">${esc(m.vendor)}</div>
+    <div class="tags" style="margin-top:8px">
+      ${OPEN_TAG(m.open)}
+      <span class="tag">${esc(m.modality)}</span>
+      <span class="tag">${esc(m.ctx)}</span>
+      <span class="tag">${esc(m.price)}</span>
+    </div>
+  </div><div class="panel-bd">`;
+
+  h += `<div class="blk"><h3>综合分 <b style="color:${m.accent}">${m.score.toFixed(1)}</b> / 100</h3>
+    <p style="color:var(--txt-3);font-size:12px;font-family:var(--mono)">${esc(m.scoreNote)}</p>
+    <div class="sbar big" style="margin-top:10px"><i style="width:${m.score}%;background:${m.accent}"></i></div>
+  </div>`;
+
+  h += `<div class="blk"><h3>优势（为什么排这么高）</h3><ul class="pros">${
+    m.pros.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>`;
+
+  h += `<div class="blk"><h3>最适合干什么</h3><p>${esc(m.best)}</p></div>`;
+
+  h += `<div class="blk avoid"><h3>别拿它干什么</h3><p>${esc(m.avoid)}</p></div>`;
+
+  h += `<div class="blk"><h3>参数</h3><table class="kv-t">
+    <tr><td>上下文</td><td>${esc(m.ctx)}</td></tr>
+    <tr><td>模态</td><td>${esc(m.modality)}</td></tr>
+    <tr><td>价格</td><td>${esc(m.price)}</td></tr>
+    <tr><td>权重</td><td>${m.open ? '开源（可自部署）' : '闭源（仅 API）'}</td></tr>
+  </table></div>`;
+
+  if (m.linkTo && getModel(m.linkTo)) {
+    h += `<div style="margin-top:14px"><button class="btn" data-openmodel="${m.linkTo}">查看接入教程 / 部署命令 →</button></div>`;
+  } else {
+    h += `<div class="blk"><p style="color:var(--txt-3);font-size:12px">
+      这个模型本站还没收录详细接入教程。想看？
+      <a href="#" data-goto="lab" style="color:var(--amber)">去实验室点名</a>，我测完补上。
+    </p></div>`;
+  }
+
+  h += `</div>`;
+  const p = $('#panel');
+  p.innerHTML = h;
+  p.classList.add('on');
+  $('#overlay').classList.add('on');
+  $('#pClose').onclick = closePanel;
+  const om = $('#panel [data-openmodel]');
+  if (om) om.onclick = () => openModel(om.dataset.openmodel);
+  $$('#panel [data-goto]').forEach(el => el.onclick = (e) => {
+    e.preventDefault(); closePanel(); state.tab = el.dataset.goto; render(); window.scrollTo(0, 0);
+  });
+}
+
+/* ---------- 渲染：新手教程 ---------- */
+function renderBasics() {
+  let h = `<div class="lab-intro">
+    完全没装过？按顺序走完这 6 步，从零到「所有软件都能调用你的本地模型」。
+    <b>第 2 步和第 6 步是最多人踩坑的地方</b>，别跳过。
+  </div>`;
+  BASICS.forEach((b, i) => {
+    h += `<div class="step">
+      <div class="n">${i + 1}</div>
+      <div><div class="t">${esc(b.title)}</div><div class="b">${esc(b.body)}</div>
+      ${b.cmd ? `<pre><button class="cp">复制</button><code>${esc(b.cmd)}</code></pre>` : ''}</div>
+    </div>`;
+  });
+  h += `<div style="margin-top:20px"><button class="btn ghost" data-goto="hw">← 回去选我的硬件档位</button></div>`;
+  return h;
+}
+
+/* ---------- 渲染：实验室 ---------- */
+function renderLab() {
+  let h = `<div class="lab-intro">
+    <b>实验室 = 这个站的补全机制。</b>
+    模型世界一个月一变，我不可能全测完。标着「待实测」的条目都是我自己还没跑过的。
+    <br><br>
+    <b>你可以：</b>提交你踩过的坑、想看的模型、发现的错误 → 我会实机测试 → 把结论回帖在这里。
+    <br>
+    <b>关于数据存储：</b>这是纯静态网站（没有服务器），你提交的留言只保存在你自己的浏览器里。
+    想让我看到，请点「导出 JSON」把文件发给我（微信/邮件都行），我导入后会在这里更新状态和测试结论。
+  </div>`;
+
+  if (state.owner) {
+    h += `<div class="card" style="margin-bottom:20px;border-color:var(--green)">
+      <div class="sec-title" style="margin-top:0">站长模式（已开启）</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" id="importBtn">导入 JSON 工单</button>
+        <button class="btn sm ghost" id="exportBtn">导出全部工单</button>
+        <button class="btn sm ghost" id="exitOwner">退出站长模式</button>
+        <input type="file" id="importFile" accept=".json" style="display:none">
+      </div>
+      <p style="font-size:12px;color:var(--txt-3);margin-top:8px">
+        在这里给工单回帖测试结论，状态会变成「已验证」，页面上就能看到。
+      </p>
+    </div>`;
+  }
+
+  /* 提交表单 */
+  h += `<div class="card" style="margin-bottom:24px">
+    <div class="sec-title" style="margin-top:0">提交一条</div>
+    <div class="form-row">
+      <label>类型</label>
+      <select id="tType">
+        <option value="missing">想看的模型没收录</option>
+        <option value="error">教程里有错 / 跑不通</option>
+        <option value="exp">我的实测数据（想分享）</option>
+        <option value="other">其他建议</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>标题（一句话说清）</label>
+      <input type="text" id="tTitle" placeholder="例：RTX 4070 12G 跑 qwen3:14b 实测只有 8 tok/s">
+    </div>
+    <div class="form-row">
+      <label>详情</label>
+      <textarea id="tBody" placeholder="你的硬件配置、具体报错、期望结果…写得越细我越容易复现"></textarea>
+    </div>
+    <div class="form-row">
+      <label>联系方式（选填，我测完想回复你时用到）</label>
+      <input type="text" id="tContact" placeholder="微信号 / 邮箱 / 留空也行">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="submitTicket">提交</button>
+      <button class="btn ghost" id="exportMine">导出我的留言 JSON</button>
+    </div>
+  </div>`;
+
+  /* 工单列表 */
+  const ts = state.tickets;
+  h += `<div class="sec-title">工单列表（${ts.length}）</div>`;
+  if (!ts.length) {
+    h += `<div class="empty"><div class="ic">🧪</div><p>还没有工单。你是第一个来补这个站的人吗？</p></div>`;
+  } else {
+    const order = { open: 0, testing: 1, resolved: 2, ignored: 3 };
+    ts.slice().sort((a, b) => (order[a.status] - order[b.status]) || (b.createdAt - a.createdAt))
+      .forEach(t => h += ticketHTML(t));
+  }
+  return h;
+}
+
+function ticketHTML(t) {
+  const st = TICKET_STATUS[t.status] || TICKET_STATUS.open;
+  let h = `<div class="ticket" data-tk="${t.id}" style="border-left-color:${st.color}">
+    <div class="t-hd">
+      <div style="flex:1">
+        <div class="t-t">${esc(t.title)}</div>
+        <div class="t-m">${esc(t.typeLabel)} · ${new Date(t.createdAt).toLocaleString('zh-CN')}${t.contact ? ' · ' + esc(t.contact) : ''}</div>
+      </div>
+      <span class="badge" style="background:${st.color}22;color:${st.color}">${st.label}</span>
+    </div>`;
+  if (t.body) h += `<div class="t-b">${esc(t.body)}</div>`;
+  (t.replies || []).forEach(r => {
+    h += `<div class="reply"><div class="rh">站长实测回帖 · ${new Date(r.at).toLocaleString('zh-CN')} · 状态改为「${(TICKET_STATUS[r.status] || {}).label || r.status}」</div>${esc(r.text)}</div>`;
+  });
+  if (state.owner) {
+    h += `<div class="acts">
+      <button class="btn sm ghost" data-reply="${t.id}">回帖 / 改状态</button>
+      <button class="btn sm ghost" data-st="${t.id}" data-v="testing">标记测试中</button>
+      <button class="btn sm ghost" data-st="${t.id}" data-v="resolved">标记已验证</button>
+      <button class="btn sm ghost" data-st="${t.id}" data-v="ignored">不采纳</button>
+      <button class="btn sm ghost" data-del="${t.id}">删除</button>
+    </div>`;
+  }
+  return h + '</div>';
+}
+
+/* ---------- 详情面板 ---------- */
+function openModel(id) {
+  const m = getModel(id);
+  if (!m) return;
+  let h = `<div class="panel-hd">
+    <button class="close" id="pClose">✕</button>
+    <div class="nm">${esc(m.name)}</div>
+    <div class="vd">${esc(m.vendor)}</div>
+    <div class="tags" style="margin-top:8px">
+      <span class="tag ${m.tier}">${tierTag(m.tier)}</span>
+      <span class="tag ${m.status}">${statusTag(m.status)}</span>
+      <span class="tag">${m.kind === 'local' ? '本地部署' : '云端 API'}</span>
+    </div>
+  </div><div class="panel-bd">`;
+
+  h += `<div class="blk"><h3>一句话定位</h3><p>${esc(m.oneLiner)}</p><p><b style="color:var(--txt)">适合谁：</b>${esc(m.bestFor)}</p></div>`;
+
+  h += `<div class="blk"><h3>参数</h3><table class="kv-t">
+    <tr><td>价格</td><td>${esc(m.price)}</td></tr>
+    <tr><td>上下文</td><td>${esc(m.ctx || '—')}</td></tr>
+    ${m.kind === 'local' ? `<tr><td>显存占用</td><td>${esc(m.vram || '—')}</td></tr>
+    <tr><td>许可</td><td>${esc(m.license || '—')}</td></tr>` : ''}
+    <tr><td>能力标签</td><td>${m.tags.map(t => `<span class="tag">${esc(t)}</span>`).join(' ')}</td></tr>
+    <tr><td>更新日期</td><td>${esc(m.updated)}</td></tr>
+  </table></div>`;
+
+  if (m.install) {
+    h += `<div class="blk"><h3>本地部署</h3>
+      <pre><button class="cp">复制</button><code>${esc(m.install.cmd)}</code></pre>
+      <p><b style="color:var(--txt)">怎么算跑通：</b>${esc(m.install.verify)}</p>
+      ${m.install.tune ? `<p><b style="color:var(--txt)">调优：</b>${esc(m.install.tune)}</p>` : ''}
+    </div>`;
+  }
+
+  if (m.api) {
+    h += `<div class="blk"><h3>API 接入</h3>
+      <p><b style="color:var(--txt)">1. 注册：</b>${esc(m.api.signup)}</p>
+      <p><b style="color:var(--txt)">2. 拿 Key：</b>${esc(m.api.key)}</p>
+      <p><b style="color:var(--txt)">3. 填参数：</b></p>
+      <table class="kv-t">
+        <tr><td>Base URL</td><td><code>${esc(m.api.baseUrl)}</code></td></tr>
+        <tr><td>模型 ID</td><td><code>${esc(m.api.modelId)}</code></td></tr>
+        <tr><td>兼容性</td><td>${esc(m.api.compat)}</td></tr>
+      </table>
+      <p style="margin-top:10px"><b style="color:var(--txt)">4. 测试是否通：</b></p>
+      <pre><button class="cp">复制</button><code>${esc(m.api.curl)}</code></pre>
+    </div>`;
+  }
+
+  if (m.pitfalls && m.pitfalls.length) {
+    h += `<div class="blk"><h3>坑</h3><ul class="pit">${m.pitfalls.map(p => `<li>${esc(p)}</li>`).join('')}</ul></div>`;
+  }
+
+  h += `<div class="blk"><p style="color:var(--txt-3);font-size:12px">
+    数据核实于 ${esc(m.updated)}。模型世界里一个月就是一代，信息过期或有错？
+    <a href="#" data-goto="lab" style="color:var(--amber)">去实验室告诉我</a>。
+  </p></div>`;
+
+  h += '</div>';
+  const p = $('#panel');
+  p.innerHTML = h;
+  p.classList.add('on');
+  $('#overlay').classList.add('on');
+  $('#pClose').onclick = closePanel;
+  /* 面板是 #view 之外的独立节点，必须单独绑定，否则复制按钮和跳转链接失效 */
+  $$('#panel pre .cp').forEach(b => b.onclick = () => copy(b.nextElementSibling.textContent, b));
+  $$('#panel [data-goto]').forEach(el => el.onclick = (e) => {
+    e.preventDefault();
+    closePanel();
+    state.tab = el.dataset.goto;
+    render();
+    window.scrollTo(0, 0);
+  });
+}
+
+function closePanel() {
+  $('#panel').classList.remove('on');
+  $('#overlay').classList.remove('on');
+}
+
+/* ---------- 主渲染 ---------- */
+function render() {
+  $$('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === state.tab));
+  const main = $('#view');
+  if (state.tab === 'hw') main.innerHTML = renderHW();
+  else if (state.tab === 'need') main.innerHTML = renderNeed();
+  else if (state.tab === 'rank') main.innerHTML = renderRank();
+  else if (state.tab === 'lib') main.innerHTML = renderLib();
+  else if (state.tab === 'basics') main.innerHTML = renderBasics();
+  else if (state.tab === 'lab') main.innerHTML = renderLab();
+  bindView();
+}
+
+function bindView() {
+  $$('#view [data-tier]').forEach(el => el.onclick = () => { state.tier = el.dataset.tier; render(); });
+  $$('#view [data-need]').forEach(el => el.onclick = () => { state.need = el.dataset.need; render(); });
+  $$('#view [data-model]').forEach(el => el.onclick = () => openModel(el.dataset.model));
+  $$('#view [data-goto]').forEach(el => el.onclick = (e) => {
+    e.preventDefault(); state.tab = el.dataset.goto; render(); window.scrollTo(0, 0);
+  });
+  $$('#view pre .cp').forEach(b => b.onclick = () => copy(b.nextElementSibling.textContent, b));
+
+  $$('#view [data-rank]').forEach(el => el.onclick = () => openTop(el.dataset.rank));
+  $$('#view [data-rf]').forEach(b => b.onclick = () => { state.rankFilter = b.dataset.rf; render(); });
+
+  $$('#view [data-fk]').forEach(b => b.onclick = () => { state.filterKind = b.dataset.fk; render(); });
+  $$('#view [data-ft]').forEach(b => b.onclick = () => {
+    state.filterTier = state.filterTier === b.dataset.ft ? 'all' : b.dataset.ft; render();
+  });
+  $$('#view [data-tag]').forEach(b => b.onclick = () => {
+    state.tag = state.tag === b.dataset.tag ? 'all' : b.dataset.tag; render();
+  });
+
+  const q = $('#q');
+  if (q) {
+    q.oninput = () => {
+      state.q = q.value;
+      const pos = q.selectionStart;
+      render();
+      const nq = $('#q'); nq.focus(); nq.setSelectionRange(pos, pos);
+    };
+  }
+
+  /* 实验室 */
+  const sb = $('#submitTicket');
+  if (sb) sb.onclick = submitTicket;
+  const em = $('#exportMine');
+  if (em) em.onclick = () => exportTickets('我的留言');
+  const ib = $('#importBtn');
+  if (ib) ib.onclick = () => $('#importFile').click();
+  const ifile = $('#importFile');
+  if (ifile) ifile.onchange = importTickets;
+  const eb = $('#exportBtn');
+  if (eb) eb.onclick = () => exportTickets('全部工单');
+  const eo = $('#exitOwner');
+  if (eo) eo.onclick = () => { state.owner = false; localStorage.removeItem(LS_OWNER); render(); toast('已退出站长模式'); };
+
+  $$('#view [data-st]').forEach(b => b.onclick = () => setStatus(b.dataset.st, b.dataset.v));
+  $$('#view [data-del]').forEach(b => b.onclick = () => delTicket(b.dataset.del));
+  $$('#view [data-reply]').forEach(b => b.onclick = () => replyTicket(b.dataset.reply));
+}
+
+/* ---------- 工单逻辑 ---------- */
+function loadTickets() {
+  try { state.tickets = JSON.parse(localStorage.getItem(LS_TICKETS) || '[]'); }
+  catch (e) { state.tickets = []; }
+  state.owner = localStorage.getItem(LS_OWNER) === '1';
+}
+function saveTickets() {
+  localStorage.setItem(LS_TICKETS, JSON.stringify(state.tickets));
+}
+
+const TYPE_LABEL = {
+  missing: '想看的没收录', error: '教程有错', exp: '实测数据', other: '其他建议'
+};
+
+function submitTicket() {
+  const title = $('#tTitle').value.trim();
+  const body = $('#tBody').value.trim();
+  const type = $('#tType').value;
+  const contact = $('#tContact').value.trim();
+  if (!title) { toast('标题写一句，不然我不知道你要测什么'); $('#tTitle').focus(); return; }
+  state.tickets.push({
+    id: 'tk_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    title, body, type, typeLabel: TYPE_LABEL[type], contact,
+    status: 'open', createdAt: Date.now(), replies: []
+  });
+  saveTickets();
+  render();
+  toast('已提交，可在下方列表看到（记得导出 JSON 发给我）');
+}
+
+function setStatus(id, v) {
+  const t = state.tickets.find(x => x.id === id);
+  if (!t) return;
+  t.status = v;
+  saveTickets(); render();
+  toast('状态已改为「' + TICKET_STATUS[v].label + '」');
+}
+
+function delTicket(id) {
+  if (!confirm('删除这条工单？不可恢复。')) return;
+  state.tickets = state.tickets.filter(x => x.id !== id);
+  saveTickets(); render(); toast('已删除');
+}
+
+function replyTicket(id) {
+  const t = state.tickets.find(x => x.id === id);
+  if (!t) return;
+  const text = prompt('你的实测结论（会公开显示在工单下）：\n\n工单：' + t.title);
+  if (text == null || !text.trim()) return;
+  const st = prompt('把状态改成？\n输入：resolved（已验证）/ testing（测试中）/ ignored（不采纳）', 'resolved');
+  const status = ['resolved', 'testing', 'ignored'].includes(st) ? st : 'resolved';
+  t.replies = t.replies || [];
+  t.replies.push({ at: Date.now(), text: text.trim(), status });
+  t.status = status;
+  saveTickets(); render(); toast('已回帖并更新状态');
+}
+
+function exportTickets(label) {
+  if (!state.tickets.length) { toast('还没有工单可导出'); return; }
+  const data = { app: 'model-hub', version: DATA_VERSION, exportedAt: new Date().toISOString(), tickets: state.tickets };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `modelhub-${label}-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('已导出，把文件发给我即可');
+}
+
+function importTickets(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      const incoming = d.tickets || [];
+      let added = 0;
+      incoming.forEach(t => {
+        if (!state.tickets.some(x => x.id === t.id)) { state.tickets.push(t); added++; }
+      });
+      saveTickets(); render();
+      toast(`导入完成，新增 ${added} 条（共 ${state.tickets.length} 条）`);
+    } catch (err) { toast('文件解析失败，不是有效的 JSON'); }
+  };
+  r.readAsText(f);
+  e.target.value = '';
+}
+
+/* ---------- 启动 ---------- */
+function init() {
+  loadTickets();
+  $$('nav.tabs button').forEach(b => b.onclick = () => { state.tab = b.dataset.tab; render(); });
+  $('#overlay').onclick = closePanel;
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closePanel();
+    /* 连续按两次 O 进站长模式 */
+    if (e.key.toLowerCase() === 'o') {
+      window._oo = window._oo || 0; window._oo++;
+      setTimeout(() => window._oo = 0, 600);
+      if (window._oo === 2 && state.tab === 'lab') {
+        state.owner = true; localStorage.setItem(LS_OWNER, '1');
+        render(); toast('站长模式已开启');
+      }
+    }
+  });
+  $('#ver').textContent = DATA_VERSION;
+  render();
+}
+document.addEventListener('DOMContentLoaded', init);
+
+
+/* ===== intro.js ===== */
+/* ============================================================
+ * model-hub / intro.js
+ * 首屏引导：模块化 3D 叠卡
+ * ★ 纯增强层，不改动 app.js 业务逻辑
+ * ★ 首次访问自动弹出；之后可通过右下角「引导」按钮唤起
+ * ============================================================ */
+(function () {
+  'use strict';
+
+  var LS = 'modelhub.intro.v1';
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  var root, deck, cards = [], dots = [];
+  var cur = 0, timer = null, paused = false, open = false;
+  var AUTO = 3800;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  /* ---------- 构建 DOM ---------- */
+  function build() {
+    if (typeof INTRO_MODULES === 'undefined' || !INTRO_MODULES.length) return false;
+
+    var n = INTRO_MODULES.length;
+    var cardHTML = INTRO_MODULES.map(function (m, i) {
+      return '<div class="icard" data-idx="' + i + '" style="--ac:' + m.accent + '">' +
+        '<div class="ic-glow"></div>' +
+        '<div class="ic-top">' +
+          '<span class="ic-ic">' + m.icon + '</span>' +
+          '<span class="ic-tag">' + esc(m.tag) + '</span>' +
+        '</div>' +
+        '<div class="ic-title">' + esc(m.title) + '</div>' +
+        '<div class="ic-desc">' + esc(m.desc) + '</div>' +
+        '<div class="ic-foot">' +
+          '<span class="ic-cta">' + esc(m.cta) + ' <i>→</i></span>' +
+          '<span class="ic-num">' + ('0' + (i + 1)) + ' / ' + ('0' + n) + '</span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    var dotHTML = INTRO_MODULES.map(function (m, i) {
+      return '<button class="dot" data-dot="' + i + '" aria-label="' + esc(m.title) + '"></button>';
+    }).join('');
+
+    root = document.createElement('div');
+    root.className = 'intro';
+    root.id = 'intro';
+    root.innerHTML =
+      '<div class="intro-veil"></div>' +
+      '<canvas class="ion-intro" id="ionIntro" aria-hidden="true"></canvas>' +
+      '<div class="intro-inner">' +
+        '<div class="intro-head">' +
+          '<div class="brand"><span class="mark">◆</span> 大模型接入指南</div>' +
+          '<h2>先选一个入口</h2>' +
+          '<p>六个模块，点正面那张卡直接进。不想看就跳过。</p>' +
+        '</div>' +
+        '<div class="deck" id="deck">' + cardHTML + '</div>' +
+        '<div class="intro-ctl">' +
+          '<button class="inav" id="iPrev" aria-label="上一张">‹</button>' +
+          '<div class="dots" id="iDots">' + dotHTML + '</div>' +
+          '<button class="inav" id="iNext" aria-label="下一张">›</button>' +
+        '</div>' +
+        '<button class="iskip" id="iSkip">跳过，直接进主页 →</button>' +
+      '</div>';
+
+    document.body.appendChild(root);
+    deck = $('#deck', root);
+    cards = $$('.icard', root);
+    dots = $$('.dot', root);
+
+    cards.forEach(function (el) {
+      el.addEventListener('click', function () {
+        var i = Number(el.dataset.idx);
+        if (i === cur) go(INTRO_MODULES[i].tab);
+        else setCur(i);
+      });
+    });
+    dots.forEach(function (d) {
+      d.addEventListener('click', function () { setCur(Number(d.dataset.dot)); });
+    });
+    $('#iPrev', root).addEventListener('click', function () { setCur(cur - 1); });
+    $('#iNext', root).addEventListener('click', function () { setCur(cur + 1); });
+    $('#iSkip', root).addEventListener('click', function () { close(); });
+
+    /* 悬停暂停自动轮播 */
+    deck.addEventListener('mouseenter', function () { paused = true; });
+    deck.addEventListener('mouseleave', function () { paused = false; });
+
+    /* 鼠标视差：整叠卡跟随指针做 3D 倾斜 */
+    if (!reduce) {
+      deck.addEventListener('mousemove', function (e) {
+        var r = deck.getBoundingClientRect();
+        var px = (e.clientX - r.left) / r.width - 0.5;
+        var py = (e.clientY - r.top) / r.height - 0.5;
+        deck.style.setProperty('--rx', (-py * 10).toFixed(2) + 'deg');
+        deck.style.setProperty('--ry', (px * 14).toFixed(2) + 'deg');
+      });
+      deck.addEventListener('mouseleave', function () {
+        deck.style.setProperty('--rx', '0deg');
+        deck.style.setProperty('--ry', '0deg');
+      });
+    }
+    return true;
+  }
+
+  /* ---------- 叠卡布局 ---------- */
+  function layout() {
+    var n = cards.length;
+    cards.forEach(function (el, i) {
+      var o = (i - cur + n) % n;
+      if (o > Math.floor(n / 2)) o = o - n;   /* 远端折到另一侧，形成环形堆叠 */
+      var a = Math.abs(o);
+      var x = o * 58;
+      var y = -a * 32;
+      var z = -a * 130;
+      var ry = -o * 12;
+      var rz = o * 3.2;
+      var sc = 1 - a * 0.055;
+      var op = a === 0 ? 1 : Math.max(1 - a * 0.24, 0.22);
+      el.style.transform = 'translate3d(' + x + 'px,' + y + 'px,' + z + 'px) rotateY(' + ry +
+        'deg) rotateZ(' + rz + 'deg) scale(' + sc + ')';
+      el.style.zIndex = String(60 - a * 5);
+      el.style.opacity = String(op);
+      el.style.pointerEvents = a === 0 ? 'auto' : (a === 1 ? 'auto' : 'none');
+      el.classList.toggle('front', a === 0);
+      el.setAttribute('aria-hidden', a === 0 ? 'false' : 'true');
+    });
+    dots.forEach(function (d, i) { d.classList.toggle('on', i === cur); });
+  }
+
+  function setCur(i) {
+    var n = cards.length;
+    cur = ((i % n) + n) % n;
+    layout();
+    restart();
+    /* 离子场跟着卡片换色，并在卡片位置炸一圈电离脉冲 */
+    var m = INTRO_MODULES[cur];
+    if (m) {
+      if (window.ionsIntro) {
+        window.ionsIntro.setTint(m.accent);
+        var r = deck ? deck.getBoundingClientRect() : null;
+        if (r) window.ionsIntro.pulse(r.left + r.width / 2, r.top + r.height / 2, 260, m.accent);
+      }
+      deck && deck.style.setProperty('--ac', m.accent);
+    }
+  }
+
+  function restart() {
+    if (timer) clearInterval(timer);
+    if (reduce) return;
+    timer = setInterval(function () { if (!paused && open) setCur(cur + 1); }, AUTO);
+  }
+
+  /* ---------- 打开 / 关闭 ---------- */
+  function show() {
+    if (!root && !build()) return;
+    open = true;
+    cur = 0;
+    layout();
+    root.classList.add('on');
+    document.documentElement.classList.add('intro-lock');
+    restart();
+    /* 背景离子场让位给引导页的离子场（两个不同时跑） */
+    if (window.ionsSwap) window.ionsSwap(true);
+    if (window.ionsIntro && INTRO_MODULES[cur]) window.ionsIntro.setTint(INTRO_MODULES[cur].accent);
+    var f = cards[cur]; if (f) f.focus && f.focus();
+  }
+
+  function close() {
+    open = false;
+    if (timer) clearInterval(timer);
+    if (window.ionsSwap) window.ionsSwap(false);
+    if (window.ionsIntro) window.ionsIntro.clearTint();
+    if (!root) return;
+    root.classList.remove('on');
+    setTimeout(function () { root.style.display = 'none'; }, reduce ? 0 : 520);
+    document.documentElement.classList.remove('intro-lock');
+    try { localStorage.setItem(LS, '1'); } catch (e) { }
+  }
+
+  /* 点卡片 → 关引导 + 跳到对应模块 */
+  function go(tab) {
+    close();
+    try { state.tab = tab; render(); } catch (e) { }
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  }
+
+  /* ---------- 键盘 ---------- */
+  document.addEventListener('keydown', function (e) {
+    if (!open) return;
+    if (e.key === 'Escape') { e.stopPropagation(); close(); }
+    else if (e.key === 'ArrowRight') setCur(cur + 1);
+    else if (e.key === 'ArrowLeft') setCur(cur - 1);
+    else if (e.key === 'Enter') go(INTRO_MODULES[cur].tab);
+  });
+
+  /* ---------- 启动 ---------- */
+  window.openIntro = function () {
+    if (root) root.style.display = '';
+    show();
+  };
+
+  document.addEventListener('DOMContentLoaded', function () {
+    /* 面板打开时不弹引导 */
+    var seen = false;
+    try { seen = localStorage.getItem(LS) === '1'; } catch (e) { }
+    if (!seen) setTimeout(show, 260);
+  });
+})();
+
+
+/* ===== ions.js ===== */
+/* ============================================================
+ * model-hub / ions.js
+ * 离子场 Ion Field —— Canvas 2D 等离子体背景
+ *
+ * 视觉概念：把「模型」当作带电离子，把「接入」当作离子间的放电连线。
+ * 冷等离子（蓝/青/紫）为主，偶尔一颗高能琥珀离子；光标是一个电离核，
+ * 靠近的离子被点亮并被轻微吸引；每隔几秒有一圈电离脉冲环扩散。
+ *
+ * 性能做法（参考社区最佳实践）：
+ *   1. 光斑用离屏 Canvas 预渲染成精灵，每帧只 drawImage，不重建渐变
+ *   2. 邻近查询用空间网格分桶，把 O(n²) 降到近似 O(n)
+ *   3. 连线按透明度分桶，一桶一次 stroke，减少状态切换
+ *   4. DPR 上限 2；页面隐藏 / 引导打开时暂停；reduce 下只画一帧静态
+ * ============================================================ */
+(function () {
+  'use strict';
+
+  var RM = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var TAU = Math.PI * 2;
+  var SPRITE = 64;                    /* 光斑精灵基准边长（CSS px 的 2 倍，缩放绘制） */
+  var BUCKETS = 5;                    /* 连线透明度分桶数 */
+
+  /* 冷等离子为主，琥珀是稀有「高能离子」——60/30/10 里的那 10% */
+  var PALETTE = [
+    { hex: '#6b8afd', w: 0.44 },      /* 蓝 */
+    { hex: '#34d3c4', w: 0.28 },      /* 青 */
+    { hex: '#a78bfa', w: 0.20 },      /* 紫 */
+    { hex: '#f5a524', w: 0.08 }       /* 琥珀 */
+  ];
+
+  function hex2rgb(h) {
+    h = String(h).replace('#', '');
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    var n = parseInt(h, 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+  function mix(a, b, t) {
+    return [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t),
+      Math.round(a[2] + (b[2] - a[2]) * t)];
+  }
+
+  /* 预渲染光斑：白热核心 + 彩色晕圈，叠加混合下读作「电离辉光」 */
+  function makeSprite(rgb) {
+    var cv = document.createElement('canvas');
+    cv.width = cv.height = SPRITE;
+    var g = cv.getContext('2d');
+    var r = SPRITE / 2;
+    var gr = g.createRadialGradient(r, r, 0, r, r, r);
+    gr.addColorStop(0.00, 'rgba(255,255,255,.98)');
+    gr.addColorStop(0.09, rgba(rgb, .90));
+    gr.addColorStop(0.26, rgba(rgb, .32));
+    gr.addColorStop(0.58, rgba(rgb, .06));
+    gr.addColorStop(1.00, rgba(rgb, 0));
+    g.fillStyle = gr;
+    g.fillRect(0, 0, SPRITE, SPRITE);
+    return cv;
+  }
+
+  function pickColor() {
+    var r = Math.random(), acc = 0;
+    for (var i = 0; i < PALETTE.length; i++) {
+      acc += PALETTE[i].w;
+      if (r <= acc) return i;
+    }
+    return 0;
+  }
+
+  /* ------------------------------------------------------------
+   * IonField：一个画布一个场
+   * ------------------------------------------------------------ */
+  function IonField(canvas, opt) {
+    opt = opt || {};
+    var ctx = canvas.getContext('2d');
+    var cfg = {
+      density: opt.density || 1,          /* 密度倍率 */
+      linkDist: opt.linkDist || 148,      /* 连线阈值 */
+      linkAlpha: opt.linkAlpha || 0.20,   /* 连线最亮透明度 */
+      cursorR: opt.cursorR || 190,        /* 光标影响半径 */
+      parallax: opt.parallax == null ? 0.055 : opt.parallax,
+      speed: opt.speed || 1,
+      maxCount: opt.maxCount || 150
+    };
+
+    var sprites = PALETTE.map(function (p) { return makeSprite(hex2rgb(p.hex)); });
+    var rgbas = PALETTE.map(function (p) { return hex2rgb(p.hex); });
+
+    var W = 0, H = 0, DPR = 1;
+    var P = [], pulses = [];
+    var cell = cfg.linkDist, cols = 0, rows = 0, buckets = [];
+    var raf = 0, last = 0, running = false, alive = true;
+    var mx = -9999, my = -9999, mOn = false;
+    var scrollY = 0;
+    var tint = rgbas[0].slice(), tintTo = rgbas[0].slice(), tintAmt = 0, tintWant = 0;
+    var segs = [];
+    var pulseEvery = opt.pulseEvery || 2600, pulseAcc = 0;
+    var i, b;
+
+    for (i = 0; i < BUCKETS; i++) segs.push([]);
+
+    /* ---------- 尺寸 ---------- */
+    function resize() {
+      var w = canvas.clientWidth || window.innerWidth;
+      var h = canvas.clientHeight || window.innerHeight;
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      W = w; H = h;
+      canvas.width = Math.round(w * DPR);
+      canvas.height = Math.round(h * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      cell = cfg.linkDist;
+      cols = Math.ceil(W / cell) + 1;
+      rows = Math.ceil(H / cell) + 1;
+      build();
+    }
+
+    /* ---------- 建场 ---------- */
+    function build() {
+      var area = W * H;
+      var base = Math.round(area / 11000);
+      var n = Math.round(Math.min(cfg.maxCount, Math.max(44, base)) * cfg.density);
+      if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) n = Math.round(n * 0.55);
+      P.length = 0;
+      for (var k = 0; k < n; k++) P.push(spawn());
+    }
+
+    function spawn() {
+      var ci = pickColor();
+      var z = 0.34 + Math.random() * 0.66;           /* 景深：0=远 1=近 */
+      var a = (Math.random() - 0.5) * TAU;
+      var sp = (0.10 + Math.random() * 0.30) * z * cfg.speed;
+      return {
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp,
+        z: z,
+        ci: ci,
+        r: (1.1 + Math.random() * 2.4) * (0.55 + z * 0.75),   /* 视觉半径 */
+        tw: Math.random() * TAU,                              /* 闪烁相位 */
+        tws: 0.008 + Math.random() * 0.022                    /* 闪烁速度 */
+      };
+    }
+
+    /* ---------- 更新 ---------- */
+    function step(dt) {
+      var i, p, dx, dy, d2;
+
+      /* 色调缓动（引导页切换卡片时 tint 会变） */
+      tintAmt += (tintWant - tintAmt) * Math.min(1, 0.06 * dt);
+      tint = mix(tint, tintTo, Math.min(1, 0.09 * dt));
+
+      /* 光标影响 + 位移 */
+      var py = scrollY * cfg.parallax;
+      for (i = 0; i < P.length; i++) {
+        p = P[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.tw += p.tws * dt;
+
+        if (mOn) {
+          dx = mx - p.x; dy = my - p.y;
+          d2 = dx * dx + dy * dy;
+          var R = cfg.cursorR;
+          if (d2 < R * R && d2 > 1) {
+            var d = Math.sqrt(d2);
+            var f = (1 - d / R);
+            p.x += (dx / d) * f * 0.55 * dt;      /* 轻微被吸附 */
+            p.y += (dy / d) * f * 0.55 * dt;
+            p.boost = f;
+          } else if (p.boost) {
+            p.boost *= Math.pow(0.94, dt);
+            if (p.boost < 0.01) p.boost = 0;
+          }
+        } else if (p.boost) {
+          p.boost *= Math.pow(0.94, dt);
+          if (p.boost < 0.01) p.boost = 0;
+        }
+
+        /* 环绕（含视差偏移后的可视区） */
+        var vy_ = p.y - py * p.z;
+        if (p.x < -40) p.x = W + 40; else if (p.x > W + 40) p.x = -40;
+        if (vy_ < -40) p.y = H + 40 + py * p.z; else if (vy_ > H + 40) p.y = -40 + py * p.z;
+      }
+
+      /* 电离脉冲 */
+      pulseAcc += dt * 16.667;
+      if (pulseAcc > pulseEvery) {
+        pulseAcc = 0;
+        if (pulses.length < 4) {
+          var q = P[(Math.random() * P.length) | 0];
+          if (q) addPulse(q.x, q.y - py * q.z, 90 + Math.random() * 90, q.ci);
+        }
+      }
+      for (i = pulses.length - 1; i >= 0; i--) {
+        var pl = pulses[i];
+        pl.r += (1.6 + pl.max * 0.010) * dt;
+        pl.a = Math.max(0, 1 - pl.r / pl.max);
+        if (pl.a <= 0) pulses.splice(i, 1);
+      }
+    }
+
+    function addPulse(x, y, max, ci, color) {
+      pulses.push({
+        x: x, y: y, r: 4, max: max, a: 1,
+        c: color || rgbas[ci == null ? 0 : ci]
+      });
+    }
+
+    /* ---------- 绘制 ---------- */
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalCompositeOperation = 'lighter';
+
+      var py = scrollY * cfg.parallax;
+      var i, j, p, q;
+
+      /* 1) 连线：空间网格分桶 + 透明度分桶 */
+      var grid = {};
+      for (i = 0; i < P.length; i++) {
+        p = P[i];
+        var px = p.x, pyy = p.y - py * p.z;
+        var cx = (px / cell) | 0, cy = (pyy / cell) | 0;
+        if (cx < 0) cx = 0; else if (cx >= cols) cx = cols - 1;
+        if (cy < 0) cy = 0; else if (cy >= rows) cy = rows - 1;
+        var key = cy * cols + cx;
+        (grid[key] || (grid[key] = [])).push(i);
+      }
+      for (b = 0; b < BUCKETS; b++) segs[b].length = 0;
+
+      var D = cfg.linkDist, D2 = D * D;
+      /* 只与右 / 下 / 左下 / 右下 四个邻格比较，避免重复配对 */
+      var NB = [[1, 0], [-1, 1], [0, 1], [1, 1]];
+      for (var key2 in grid) {
+        var kk = key2 | 0;
+        var gx = kk % cols, gy = (kk / cols) | 0;
+        var list = grid[kk];
+        for (i = 0; i < list.length; i++) {
+          for (j = i + 1; j < list.length; j++) pushSeg(P[list[i]], P[list[j]], py, D, D2);
+          for (var n = 0; n < 4; n++) {
+            var nx = gx + NB[n][0], ny = gy + NB[n][1];
+            if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+            var other = grid[ny * cols + nx];
+            if (!other) continue;
+            for (j = 0; j < other.length; j++) pushSeg(P[list[i]], P[other[j]], py, D, D2);
+          }
+        }
+      }
+      var linkC = mix(rgbas[0], tint, tintAmt * 0.75);
+      for (b = 0; b < BUCKETS; b++) {
+        var arr = segs[b];
+        if (!arr.length) continue;
+        ctx.strokeStyle = rgba(linkC, cfg.linkAlpha * ((b + 1) / BUCKETS));
+        ctx.lineWidth = 0.6 + (b / BUCKETS) * 0.5;
+        ctx.beginPath();
+        for (i = 0; i < arr.length; i += 4) {
+          ctx.moveTo(arr[i], arr[i + 1]);
+          ctx.lineTo(arr[i + 2], arr[i + 3]);
+        }
+        ctx.stroke();
+      }
+
+      /* 2) 光标 → 近处离子的放电丝 */
+      if (mOn) {
+        ctx.strokeStyle = rgba(mix(rgbas[1], tint, tintAmt), 0.16);
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        var R2 = cfg.cursorR * cfg.cursorR;
+        for (i = 0; i < P.length; i++) {
+          p = P[i];
+          var yy = p.y - py * p.z;
+          var ddx = p.x - mx, ddy = yy - my;
+          var dd = ddx * ddx + ddy * ddy;
+          if (dd < R2 * 0.62) { ctx.moveTo(mx, my); ctx.lineTo(p.x, yy); }
+        }
+        ctx.stroke();
+      }
+
+      /* 3) 离子本体 */
+      for (i = 0; i < P.length; i++) {
+        p = P[i];
+        var y2 = p.y - py * p.z;
+        var tw = 0.62 + Math.sin(p.tw) * 0.30;           /* 呼吸感闪烁 */
+        var a = (0.16 + p.z * 0.52) * tw;
+        if (p.boost) a += p.boost * 0.55;
+        a = Math.min(a, 0.95);
+        var size = p.r * (p.boost ? 7.5 + p.boost * 3.2 : 7.0);
+        ctx.globalAlpha = a;
+        ctx.drawImage(sprites[p.ci], p.x - size / 2, y2 - size / 2, size, size);
+      }
+      ctx.globalAlpha = 1;
+
+      /* 4) 电离脉冲环 */
+      for (i = 0; i < pulses.length; i++) {
+        var pl = pulses[i];
+        ctx.strokeStyle = rgba(pl.c, pl.a * pl.a * 0.34);
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(pl.x, pl.y, pl.r, 0, TAU);
+        ctx.stroke();
+      }
+
+      /* 5) 光标电离核 */
+      if (mOn) {
+        var gs = 150;
+        ctx.globalAlpha = 0.30;
+        ctx.drawImage(sprites[0], mx - gs / 2, my - gs / 2, gs, gs);
+        ctx.globalAlpha = 1;
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    function pushSeg(p, q, py, D, D2) {
+      var dx = p.x - q.x;
+      var dyabs = (p.y - py * p.z) - (q.y - py * q.z);
+      var d2 = dx * dx + dyabs * dyabs;
+      if (d2 > D2) return;
+      var t = 1 - Math.sqrt(d2) / D;
+      var bi = Math.min(BUCKETS - 1, (t * BUCKETS) | 0);
+      var arr = segs[bi];
+      arr.push(p.x, p.y - py * p.z, q.x, q.y - py * q.z);
+    }
+
+    /* ---------- 主循环 ---------- */
+    function loop(t) {
+      if (!alive) return;
+      raf = requestAnimationFrame(loop);
+      var dt = last ? Math.min((t - last) / 16.667, 2.4) : 1;
+      last = t;
+      step(dt);
+      draw();
+    }
+
+    function start() {
+      if (running || !alive) return;
+      running = true;
+      last = 0;
+      if (RM.matches) { draw(); return; }   /* reduce：只画一帧静态场 */
+      raf = requestAnimationFrame(loop);
+    }
+    function stop() {
+      running = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    }
+
+    /* ---------- 事件 ---------- */
+    var onMove = function (e) {
+      var r = canvas.getBoundingClientRect();
+      mx = e.clientX - r.left; my = e.clientY - r.top;
+      mOn = mx >= -60 && my >= -60 && mx <= r.width + 60 && my <= r.height + 60;
+    };
+    var onLeave = function () { mOn = false; };
+    var onDown = function (e) {
+      var r = canvas.getBoundingClientRect();
+      addPulse(e.clientX - r.left, e.clientY - r.top, 200, null, mix(rgbas[1], tint, tintAmt));
+      if (pulses.length > 6) pulses.shift();
+    };
+    var onScroll = function () { scrollY = window.pageYOffset || document.documentElement.scrollTop || 0; };
+    var onVis = function () { if (document.hidden) stop(); else start(); };
+    var rt = 0;
+    var onResize = function () { clearTimeout(rt); rt = setTimeout(resize, 160); };
+
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('mouseout', onLeave, { passive: true });
+    window.addEventListener('pointerdown', onDown, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onResize);
+    document.addEventListener('visibilitychange', onVis);
+
+    resize();
+    onScroll();
+
+    return {
+      start: start,
+      stop: stop,
+      resize: resize,
+      /* 在指定位置炸一圈电离脉冲（引导页切卡时调用） */
+      pulse: function (x, y, max, color) { addPulse(x, y, max || 220, null, color ? hex2rgb(color) : null); },
+      /* 把整场的连线色往某个强调色上带（引导页按卡片换色） */
+      setTint: function (hex, amt) {
+        tintTo = hex2rgb(hex || '#6b8afd');
+        tintWant = amt == null ? 0.85 : amt;
+      },
+      clearTint: function () { tintWant = 0; },
+      destroy: function () {
+        alive = false; stop();
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseout', onLeave);
+        window.removeEventListener('pointerdown', onDown);
+        window.removeEventListener('scroll', onScroll);
+        window.removeEventListener('resize', onResize);
+        document.removeEventListener('visibilitychange', onVis);
+      }
+    };
+  }
+
+  /* ------------------------------------------------------------
+   * 自动装配
+   *   #ionBg    —— 全站背景场
+   *   #ionIntro —— 引导页专用场（更密、更快，只在引导打开时运行）
+   * ------------------------------------------------------------ */
+  window.IonField = IonField;
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var bg = document.getElementById('ionBg');
+    if (bg) {
+      window.ionsBg = IonField(bg, { density: 1, maxCount: 150 });
+      window.ionsBg.start();
+      requestAnimationFrame(function () { bg.classList.add('ready'); });   /* 画完第一帧再淡入 */
+    }
+
+    var it = document.getElementById('ionIntro');
+    if (it) {
+      window.ionsIntro = IonField(it, {
+        density: 1.6, maxCount: 130, linkDist: 134,
+        linkAlpha: 0.30, cursorR: 220, speed: 1.3, pulseEvery: 1500
+      });
+    }
+  });
+
+  /* 引导打开时：背景场让位给引导场，避免两个场同时跑
+     引导页的画布是 intro.js 动态插入的，所以这里惰性创建 */
+  window.ionsSwap = function (toIntro) {
+    var a = window.ionsBg, b = window.ionsIntro;
+    if (toIntro) {
+      if (!b) {
+        var cv = document.getElementById('ionIntro');
+        if (cv) {
+          b = window.ionsIntro = IonField(cv, {
+            density: 1.6, maxCount: 130, linkDist: 134,
+            linkAlpha: 0.30, cursorR: 220, speed: 1.3, pulseEvery: 1500
+          });
+        }
+      }
+      if (a) a.stop();
+      if (b) b.start();
+    } else {
+      if (b) b.stop();
+      if (a) a.start();
+    }
+  };
+})();
+
+
+/* ===== fx.js ===== */
+/* ============================================================
+ * model-hub / fx.js
+ * 动效层：滚动进度 / 入场序列 / 数字滚动 / 视图切换 / 跑马灯 / 回顶
+ * ★ 不改动 app.js 任何业务逻辑，只做「增强」
+ * ★ 内容由 app.js 动态渲染，用 MutationObserver 在每次重渲染后重新套用动画
+ * ============================================================ */
+(function () {
+  'use strict';
+
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  /* ---------- 数字滚动（暴露给 index.html 用） ---------- */
+  window.fxCount = function (el, target, dec) {
+    if (!el) return;
+    dec = dec || 0;
+    if (reduce) { el.textContent = target.toFixed(dec); return; }
+    var dur = 900, t0 = 0;
+    function step(ts) {
+      if (!t0) t0 = ts;
+      var k = Math.min((ts - t0) / dur, 1);
+      var e = 1 - Math.pow(1 - k, 3);
+      el.textContent = (target * e).toFixed(dec);
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  };
+
+  /* ---------- 滚动进度 + 回顶环 ---------- */
+  var prog = $('#prog'), bt = $('#backTop'), ring = $('#backTop .ring');
+  var CIRC = 138;
+  function onScroll() {
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var p = max > 0 ? h.scrollTop / max : 0;
+    if (prog) prog.style.width = (p * 100) + '%';
+    if (bt) bt.classList.toggle('show', h.scrollTop > 420);
+    if (ring) ring.style.strokeDashoffset = (CIRC * (1 - p)).toFixed(1);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+  if (bt) bt.addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
+
+  /* ---------- 跑马灯：滚动「最新 + 排名最靠前」的模型 ---------- */
+  function buildTicker() {
+    var track = $('#tick');
+    if (!track) return;
+    var items = [];
+    try {
+      if (typeof TOP50 !== 'undefined' && TOP50.length) {
+        /* 榜单前 12 名 + 最新上榜的国产 / 开源亮点，按排名顺序滚动 */
+        items = TOP50.slice(0, 12).map(function (m) {
+          return '#' + m.rank + ' ' + m.name.toUpperCase() + ' · ' + m.vendor.toUpperCase();
+        });
+        TOP50.filter(function (m) { return m.rank > 12 && m.open; }).slice(0, 3).forEach(function (m) {
+          items.push('#' + m.rank + ' ' + m.name.toUpperCase() + ' · 开源权重');
+        });
+      } else {
+        items = (typeof MODELS !== 'undefined' ? MODELS : []).slice(0, 14)
+          .map(function (m) { return (m.name + ' · ' + m.vendor).toUpperCase(); });
+      }
+    } catch (e) { items = []; }
+    if (!items.length) {
+      items = ['本地部署 · 按显存档位选', '云端 API · 免费与付费对照', '实测回帖 · 实验室工单',
+        'OLLAMA 一键拉取', 'OPENAI 兼容端点', '数据核实 ' + (typeof DATA_VERSION !== 'undefined' ? DATA_VERSION : '')];
+    }
+    var html = items.map(function (t) { return '<span>' + t + '</span>'; }).join('');
+    track.innerHTML = html + html; /* 复制一份，translateX(-50%) 无缝循环 */
+    /* 轨道越宽，固定 40s 就越快 —— 按实际宽度换算成恒定线速度（约 68px/s） */
+    requestAnimationFrame(function () {
+      var half = track.scrollWidth / 2;
+      if (half > 0) track.style.animationDuration = Math.max(24, Math.round(half / 68)) + 's';
+    });
+  }
+
+  /* ---------- 入场动画 ---------- */
+  var REVEAL_SEL = [
+    '.sec-title', '.tier-grid', '.filters', '.pick-box', '.pick-list > *',
+    '.step', '.ticket', '.lab-intro', '.empty', '.card',
+    '.rank-tools', '.rank-row', '.callout', '.blk'
+  ].join(',');
+
+  /* 分数条：进入视口时从 0 长到目标宽度 */
+  function growBars(el) {
+    if (!el) return;
+    var boxes = el.matches && el.matches('.sbar') ? [el] : $$('.sbar', el);
+    boxes.forEach(function (box) {
+      var fill = box.querySelector('i');
+      if (!fill || fill.getAttribute('data-grown')) return;
+      var w = fill.style.width || (fill.getAttribute('data-w') ? fill.getAttribute('data-w') + '%' : '');
+      if (!w) return;
+      fill.setAttribute('data-grown', '1');
+      if (reduce) { fill.style.width = w; return; }
+      fill.style.transition = 'none';
+      fill.style.width = '0%';
+      void fill.offsetWidth;
+      fill.style.transition = '';
+      requestAnimationFrame(function () { fill.style.width = w; });
+    });
+  }
+
+  var io = null;
+  if ('IntersectionObserver' in window && !reduce) {
+    io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add('in');
+        growBars(en.target);
+        io.unobserve(en.target);
+      });
+    }, { threshold: 0.06, rootMargin: '0px 0px -6% 0px' });
+  }
+
+  /* 已渲染过的节点打标记，避免 MutationObserver 重复处理 */
+  var FLAG = 'data-rv';
+
+  function enhance(root, animate) {
+    if (!root) return;
+    var cands = $$(REVEAL_SEL, root);
+    /* 排除嵌套：父级已经在动画集合里时，子元素不再单独动画 */
+    var list = cands.filter(function (el) {
+      var p = el.parentElement;
+      while (p && p !== root) {
+        if (p.matches(REVEAL_SEL)) return false;
+        p = p.parentElement;
+      }
+      return true;
+    });
+
+    list.forEach(function (el, i) {
+      if (el.getAttribute(FLAG)) return;
+      el.setAttribute(FLAG, '1');
+      if (reduce || !animate || !io) {
+        el.classList.add('rv', 'in');   /* 直接就位，不做动画 */
+        growBars(el);
+        return;
+      }
+      el.classList.add('rv');
+      el.style.transitionDelay = Math.min(i * 55, 330) + 'ms';
+      io.observe(el);
+    });
+  }
+
+  /* ---------- 视图切换 ---------- */
+  var view = $('#view');
+  var lastRender = 0;
+  var lastTab = null;
+
+  function currentTab() {
+    try { return state.tab; } catch (e) { return null; }
+  }
+
+  function handleRender() {
+    if (!view) return;
+    var now = Date.now();
+    var tab = currentTab();
+    var tabChanged = (tab !== lastTab);
+    /* 搜索框每敲一个字都会重渲染 —— 这种高频重渲染不做入场动画，避免闪烁 */
+    var animate = (now - lastRender > 600) || tabChanged;
+    lastRender = now;
+    lastTab = tab;
+
+    if (tabChanged) {
+      /* 切 Tab：整个视图做一次淡入上移，内部元素不再各自动画，避免叠加抖动 */
+      if (!reduce) {
+        view.classList.remove('swap');
+        void view.offsetWidth;        /* 强制重排以重启动画 */
+        view.classList.add('swap');
+      }
+      window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+      enhance(view, false);
+      return;
+    }
+    /* 同 Tab 内的重渲染（选档位 / 筛选 / 搜索）：只做错峰入场，不滚动页面 */
+    enhance(view, animate);
+  }
+
+  if (view && 'MutationObserver' in window) {
+    var mo = new MutationObserver(function () {
+      clearTimeout(mo._t);
+      mo._t = setTimeout(handleRender, 0);
+    });
+    mo.observe(view, { childList: true });
+  }
+
+  /* ---------- 抽屉打开时也给内容套上动画 ---------- */
+  var panel = $('#panel');
+  if (panel && 'MutationObserver' in window) {
+    var pm = new MutationObserver(function () {
+      setTimeout(function () { enhance(panel, true); growBars(panel); }, 30);
+    });
+    pm.observe(panel, { childList: true });
+  }
+
+  /* ---------- 首屏：无 JS 渲染时也保证内容可见 ---------- */
+  document.addEventListener('DOMContentLoaded', function () {
+    buildTicker();
+    enhance(view, true);
+    /* 兜底：3 秒后把还没进入视口的残留元素强制显示，防止任何情况下白屏 */
+    setTimeout(function () {
+      $$('.rv:not(.in)', view).forEach(function (el) {
+        var r = el.getBoundingClientRect();
+        if (r.top < window.innerHeight) el.classList.add('in');
+      });
+    }, 2600);
+  });
+  window.addEventListener('load', function () { enhance(view, true); onScroll(); });
+})();
+
+</script><script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var v = document.getElementById('ver').textContent;
+    document.getElementById('ver2').textContent = v;
+    fxCount(document.getElementById('cnt'), MODELS.length, 0);
+    var ri = document.getElementById('reIntro');
+    if (ri) ri.addEventListener('click', function () { if (window.openIntro) window.openIntro(); });
+  });
+</script>
+</body>
+</html>

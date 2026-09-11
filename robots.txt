@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# 重要：切勿 Disallow 本站的 .js / .css。
+# 本站点为完全自包含的单文件（资源全部内联），无此外部依赖；
+# 搜索引擎需要抓取页面内的脚本才能完整渲染榜单。
+Sitemap: https://model-hub.example.com/sitemap.xml

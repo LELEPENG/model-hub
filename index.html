@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="2JI7S7ZCV4rxFtzSoVi6UB">
+<head data-page-node-id="IixEHrih6Kou1COAdKVABV">
+<meta charset="UTF-8" data-page-node-id="iscEQJnRvoIbZweMS09L96">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="Eq1xoAUJogZIZhsx2k696U">
+<title>大模型一站式接入指南 · 按你的电脑选模型 + API 接入教程</title>
+<meta name="description" content="输入你的显卡/内存，告诉你该装哪 1-2 个本地大模型；再教你怎么把 GPT-6 Astra、Claude Opus 5 这些最强模型和免费 API 接进你的软件。" data-page-node-id="IM3FO39ItWPUqpyrSvQONG">
+<link rel="stylesheet" href="styles.css?v=20260911c" data-page-node-id="5n6KEiqJfC2vYgLRjaFL2r">
+</head>
+<body data-page-node-id="11GwwgHJTlZhbX3RVyaIJj">
+
+<div class="bg-orbs"><span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span></div>
+<div class="grid-lines"></div>
+<canvas id="ionBg" class="ion-bg" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<div class="progress" id="prog"></div>
+
+<header class="site" data-page-node-id="4tFOgDtXuYkcGJG7VddJkB">
+  <div class="wrap" data-page-node-id="DqGFIiUpvTUyAsFwEswTLH">
+    <div class="logo" data-page-node-id="jJUdgbQDtoiSQuM5xkRpuV">
+      <span class="mark" data-page-node-id="0NgvBTprD1TYD9PcxmOffT">◆</span>
+      <span data-page-node-id="ne0iYnvpS7KUJ2h7vF3QEA">大模型接入指南 <small data-page-node-id="5jZqCFYWcUXfIpHdFydmJL">本地部署 + API 一站式</small></span>
+      <span class="live" title="数据持续更新中"></span>
+    </div>
+    <nav class="tabs" data-page-node-id="GkDfMsGvzgtyz5TdPjiycN">
+      <button data-tab="rank" class="on" data-page-node-id="tbRank001xx">🏆 全球 Top50</button>
+      <button data-tab="hw" data-page-node-id="jDQyfR4RIUvfL2yN5k4qYk">按硬件选</button>
+      <button data-tab="need" data-page-node-id="qrF1pMoZQJWn90CqEAE7Un">按需求选</button>
+      <button data-tab="lib" data-page-node-id="FkiaKhFepBD6DWYjKfvmQX">模型库</button>
+      <button data-tab="basics" data-page-node-id="hO0b2ysqDsT0Byarw6FeOx">新手 6 步</button>
+      <button data-tab="lab" data-page-node-id="qSzAaREOjgo52Mp20gZhQt">实验室</button>
+    </nav>
+  </div>
+</header>
+
+<main data-page-node-id="9L7J0mjQaquTwRpzsJVmQo">
+  <div class="wrap" data-page-node-id="7CEWoqV5HKkAJYKPi0C626">
+    <div class="hero" data-page-node-id="6V1UupnYNJoBpCTv6xOZRh">
+      <h1 data-page-node-id="zWJtJ54lS9Gu7ocDmNBYcK">全球 Top50 大模型排名就在下面<br data-page-node-id="uRS1WpgOaVxJs3m6WFeTp0"><em data-page-node-id="gXfXySG0hXnSEBEcYpOHIv">再告诉你：你的电脑该装哪个</em></h1>
+      <p data-page-node-id="8SQkfHwm44ViA4cCSgPbJc">
+        先看排名知道谁最强、各自适合干什么；再按你的显存档位选能跑的本地模型，
+        或者按你手头的事选云端 API。所有命令可直接复制，所有参数都标明填什么。
+      </p>
+      <div class="meta" data-page-node-id="UWWErk56dFK5zxnSFOaAFh">
+        <span class="tag" data-page-node-id="ddTGUnHrWv0LEnh1HGyqFs">数据核实 <b id="ver" data-page-node-id="AsQ83y8PuEuxMkQ3ZCZZtF">—</b></span>
+        <span class="tag" data-page-node-id="eLjp8pRHZFBgzFE3tGXNpV">收录 <b id="cnt" data-page-node-id="WoGYpGdJEfbhCEINLk61wV">—</b> 个模型</span>
+        <span class="tag paid" data-page-node-id="ddTGUnHrWv0LEnh1HGyqFz">Top50 <b>2026.09</b></span>
+        <span class="tag verified" data-page-node-id="oSO4G6vEb9DBsbE0jjQ62f">已实测</span>
+        <span class="tag untested" data-page-node-id="VRs8aey17r3nd2Yz9vHdgc">待实测</span>
+      </div>
+      <div class="ticker"><div class="ticker-track" id="tick"></div></div>
+    </div>
+    <div id="view" data-page-node-id="7PkZfRpWJlgZhyo2IAQCdH"></div>
+  </div>
+</main>
+
+<div class="overlay" id="overlay" data-page-node-id="LkJejo7QyETCfjHITSj7xL"></div>
+<aside class="panel" id="panel" data-page-node-id="Lu6D276hs6r0w4CDQPE1iP"></aside>
+<div class="toast" id="toast" data-page-node-id="BrFyPRGoWDgO6FXzOdopRH"></div>
+
+<footer class="site" data-page-node-id="xvI9HaCwq0HITKGQM9G72O">
+  <div class="wrap" data-page-node-id="c4SX2q1YHRk6eEIZNoyrBM">
+    <p data-page-node-id="chUJEZ1NhHCUOonCxSytQt">
+      数据核实于 <b id="ver2" data-page-node-id="PWEcJiOrtoFT24sDPoz1Em">—</b>。模型世界一个月一代——信息过期、命令跑不通、想看的模型没收录，
+      去 <a href="#" onclick="document.querySelector('[data-tab=\'lab\']').click();return false;" data-page-node-id="GqHxsI6YhUBQpk2AWxI4Od">实验室</a> 留言，我会实机测完把结论回帖。
+    </p>
+    <p style="margin-top:6px;color:var(--txt-3)" data-page-node-id="ruDYA53aqaoq2AWBy8YwbN">
+      这是纯静态页面，不上传任何数据。你提交的留言只存在你自己的浏览器里。
+    </p>
+    <p style="margin-top:10px;color:var(--txt-3);font-size:12px;line-height:1.7" data-page-node-id="disc001xx">
+      免责声明：本榜单为编辑性整理与观点性排名，数据核实于 <b>2026.09</b>，仅供参考，<b>不构成任何投资、采购或技术选型的最终建议</b>；模型参数、跑分可能随版本变动，使用前请以官方信息为准。各模型名称及商标归各自所有者所有。
+    </p>
+  </div>
+</footer>
+
+<div class="float-stack">
+  <button id="reIntro" title="重新打开引导">✦<span>引导</span></button>
+  <button id="backTop" title="回到顶部">
+    <svg viewBox="0 0 48 48"><circle class="ring" cx="24" cy="24" r="22"></circle></svg>
+    <span>↑</span>
+  </button>
+</div>
+
+<script src="data.js?v=20260911c"></script>
+<script src="app.js?v=20260911c"></script>
+<script src="intro.js?v=20260911c"></script>
+<script src="ions.js?v=20260911c"></script>
+<script src="fx.js?v=20260911c"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var v = document.getElementById('ver').textContent;
+    document.getElementById('ver2').textContent = v;
+    fxCount(document.getElementById('cnt'), MODELS.length, 0);
+    var ri = document.getElementById('reIntro');
+    if (ri) ri.addEventListener('click', function () { if (window.openIntro) window.openIntro(); });
+  });
+</script>
+</body>
+</html>

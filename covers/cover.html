@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MODEL HUB · 每日封面工厂</title>
+<style>
+@font-face{font-family:'Outfit';src:url('fonts/outfit-400.woff2') format('woff2');font-weight:400;font-display:block}
+@font-face{font-family:'Outfit';src:url('fonts/outfit-600.woff2') format('woff2');font-weight:600;font-display:block}
+@font-face{font-family:'Outfit';src:url('fonts/outfit-700.woff2') format('woff2');font-weight:700;font-display:block}
+@font-face{font-family:'Outfit';src:url('fonts/outfit-800.woff2') format('woff2');font-weight:800;font-display:block}
+@font-face{font-family:'JBM';src:url('fonts/jbm-400.woff2') format('woff2');font-weight:400;font-display:block}
+
+:root{
+  --bg:#07080a;
+  --txt:#e9edf5; --txt2:#a6aec0; --txt3:#6b7488;
+  --ac:#6b8afd; --ac2:rgba(107,138,253,.32); --ac3:rgba(107,138,253,.13);
+  --s:1; --W:1080px; --H:1440px; --mc:3;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#000;overflow:hidden}
+body{font-family:'Outfit','Microsoft YaHei','微软雅黑',sans-serif;-webkit-font-smoothing:antialiased}
+
+.stage{
+  position:relative;width:var(--W);height:var(--H);overflow:hidden;color:var(--txt);
+  background:
+    radial-gradient(125% 92% at 10% 2%, var(--ac3) 0%, transparent 56%),
+    radial-gradient(95% 72% at 102% 104%, rgba(52,211,196,.09) 0%, transparent 62%),
+    radial-gradient(70% 60% at 88% 6%, rgba(167,139,250,.07) 0%, transparent 60%),
+    var(--bg);
+}
+#ion{position:absolute;inset:0;mix-blend-mode:screen;opacity:.95;pointer-events:none}
+.grid{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.032) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.032) 1px,transparent 1px);
+  background-size:calc(60px*var(--s)) calc(60px*var(--s));
+  -webkit-mask-image:radial-gradient(125% 100% at 26% 16%,#000 0%,transparent 76%);
+          mask-image:radial-gradient(125% 100% at 26% 16%,#000 0%,transparent 76%);
+}
+.vig{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(112% 84% at 46% 38%,transparent 38%,rgba(0,0,0,.58) 100%)}
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+.wrap{position:relative;z-index:3;height:100%;display:flex;flex-direction:column;
+  padding:calc(64px*var(--s)) calc(68px*var(--s)) calc(60px*var(--s))}
+
+/* ---------- header ---------- */
+.hd{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{display:flex;align-items:baseline;gap:calc(13px*var(--s))}
+.brand .dot{width:calc(9px*var(--s));height:calc(9px*var(--s));border-radius:50%;
+  background:var(--ac);box-shadow:0 0 calc(20px*var(--s)) var(--ac);align-self:center}
+.brand b{font-size:calc(31px*var(--s));font-weight:800;letter-spacing:.015em}
+.brand span{font-size:calc(19px*var(--s));color:var(--txt3);letter-spacing:.1em;
+  font-family:'Microsoft YaHei','微软雅黑',sans-serif;font-weight:400}
+.hd-r{display:flex;align-items:center;gap:calc(14px*var(--s));font-family:'JBM';
+  font-size:calc(19px*var(--s));color:var(--txt3);letter-spacing:.16em}
+.hd-r .day{color:var(--ac);border:1px solid var(--ac2);border-radius:999px;
+  padding:calc(6px*var(--s)) calc(15px*var(--s));letter-spacing:.14em}
+
+.rule{margin:calc(22px*var(--s)) 0 calc(32px*var(--s));height:1px;
+  background:linear-gradient(90deg,var(--ac) 0%,var(--ac2) 16%,rgba(255,255,255,.07) 42%,transparent 100%)}
+
+/* ---------- main ---------- */
+main{flex:1;display:flex;flex-direction:column;min-height:0}
+.left{display:flex;flex-direction:column;min-width:0}
+
+.rankno{display:flex;align-items:flex-end;gap:calc(20px*var(--s))}
+.num{font-size:calc(272px*var(--s));font-weight:800;line-height:.78;letter-spacing:-.05em;
+  font-variant-numeric:tabular-nums;
+  background:linear-gradient(148deg,#ffffff 0%,var(--ac) 40%,rgba(255,255,255,.05) 94%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 calc(52px*var(--s)) var(--ac2))}
+.rlab{font-family:'JBM';font-size:calc(18px*var(--s));color:var(--txt3);letter-spacing:.34em;
+  writing-mode:vertical-rl;padding-bottom:calc(14px*var(--s));white-space:nowrap}
+
+.nm{margin-top:calc(24px*var(--s));font-size:calc(72px*var(--s));font-weight:800;
+  letter-spacing:-.022em;line-height:1.06;color:#fff}
+.meta{margin-top:calc(13px*var(--s));display:flex;align-items:center;gap:calc(13px*var(--s));
+  flex-wrap:wrap;font-family:'JBM';font-size:calc(21px*var(--s));color:var(--txt3);letter-spacing:.05em}
+.pill{border:1px solid var(--ac2);color:var(--ac);border-radius:999px;
+  padding:calc(4px*var(--s)) calc(13px*var(--s));font-size:calc(17px*var(--s));letter-spacing:.1em;
+  font-family:'Microsoft YaHei','微软雅黑',sans-serif}
+.pill.g{border-color:rgba(255,255,255,.14);color:var(--txt2)}
+
+.hook{margin-top:calc(24px*var(--s));font-size:calc(46px*var(--s));font-weight:700;line-height:1.34;
+  color:#fff;letter-spacing:.02em;font-family:'Microsoft YaHei','微软雅黑',sans-serif}
+.hook i{font-style:normal;color:var(--ac)}
+.tag{margin-top:calc(16px*var(--s));font-size:calc(25px*var(--s));line-height:1.78;color:var(--txt2);
+  max-width:calc(900px*var(--s));font-family:'Microsoft YaHei','微软雅黑',sans-serif;font-weight:400}
+
+.metrics{margin-top:calc(32px*var(--s));display:grid;grid-template-columns:repeat(var(--mc),1fr);
+  gap:calc(20px*var(--s))}
+.metric{border-top:1px solid rgba(255,255,255,.09);padding-top:calc(15px*var(--s))}
+.metric .k{font-family:'JBM';font-size:calc(16px*var(--s));color:var(--txt3);
+  letter-spacing:.2em;text-transform:uppercase}
+.metric .v{margin-top:calc(7px*var(--s));font-size:calc(37px*var(--s));font-weight:700;
+  letter-spacing:-.01em;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metric .v small{font-size:calc(19px*var(--s));color:var(--txt3);font-weight:400;margin-left:.12em;
+  font-family:'JBM'}
+
+/* ---------- list ---------- */
+.list{margin-top:auto;padding-top:calc(26px*var(--s))}
+.lhd{display:flex;align-items:center;gap:calc(12px*var(--s));font-family:'JBM';
+  font-size:calc(16px*var(--s));letter-spacing:.22em;color:var(--txt3);text-transform:uppercase;
+  margin-bottom:calc(16px*var(--s))}
+.lhd::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07)}
+.rows{display:flex;flex-direction:column;gap:calc(9px*var(--s))}
+.row{display:grid;grid-template-columns:calc(38px*var(--s)) minmax(0,1fr) calc(118px*var(--s)) calc(62px*var(--s));
+  align-items:center;gap:calc(14px*var(--s));padding:calc(7px*var(--s)) 0;
+  border-bottom:1px solid rgba(255,255,255,.05)}
+.row .r{font-family:'JBM';font-size:calc(19px*var(--s));color:var(--txt3);font-variant-numeric:tabular-nums}
+.row .n{font-size:calc(24px*var(--s));font-weight:600;color:var(--txt2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .bar{height:calc(5px*var(--s));border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden}
+.row .bar i{display:block;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,rgba(255,255,255,.18),rgba(255,255,255,.34))}
+.row .s{font-family:'JBM';font-size:calc(20px*var(--s));color:var(--txt);text-align:right;
+  font-variant-numeric:tabular-nums}
+.row.on .r{color:var(--ac)}
+.row.on .n{color:#fff;font-weight:700}
+.row.on .bar i{background:linear-gradient(90deg,var(--ac),#fff)}
+.row.on .s{color:var(--ac);font-weight:600}
+
+/* ---------- footer ---------- */
+.ft{margin-top:calc(22px*var(--s));padding-top:calc(20px*var(--s));
+  border-top:1px solid rgba(255,255,255,.09);display:flex;align-items:center;justify-content:space-between;gap:20px}
+.cta{display:flex;align-items:center;gap:calc(12px*var(--s));font-size:calc(23px*var(--s));color:var(--txt2);
+  font-family:'Microsoft YaHei','微软雅黑',sans-serif;font-weight:400;min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cta .sq{width:calc(9px*var(--s));height:calc(9px*var(--s));border:1px solid var(--ac2);border-radius:2px;flex:none}
+.ft-r{font-family:'JBM';font-size:calc(18px*var(--s));color:var(--txt3);letter-spacing:.2em;white-space:nowrap}
+
+/* ================= 版式变体：不是等比缩放，是重排版 ================= */
+.tgroup{display:contents}
+
+.mode-tall   .num{font-size:calc(424px*var(--s))}
+.mode-tall   .nm{margin-top:calc(30px*var(--s))}
+.mode-tall   .hook{font-size:calc(54px*var(--s));margin-top:calc(44px*var(--s))}
+.mode-tall   .tag{font-size:calc(27px*var(--s))}
+.mode-tall   .metrics{margin-top:calc(78px*var(--s))}
+.mode-tall   .metric .v{font-size:calc(41px*var(--s))}
+.mode-tall   .list{padding-top:calc(58px*var(--s))}
+.mode-tall   .rows{gap:calc(13px*var(--s))}
+.mode-tall   .row{padding:calc(9px*var(--s)) 0}
+.mode-tall   .rule{margin:calc(38px*var(--s)) 0 calc(52px*var(--s))}
+
+.mode-compact .wrap{padding:calc(54px*var(--s)) calc(64px*var(--s)) calc(50px*var(--s))}
+.mode-compact .num{font-size:calc(252px*var(--s))}
+.mode-compact .hook{font-size:calc(41px*var(--s));margin-top:calc(20px*var(--s))}
+.mode-compact .rule{margin:calc(18px*var(--s)) 0 calc(26px*var(--s))}
+.mode-compact .list{padding-top:calc(20px*var(--s))}
+
+.mode-square .wrap{padding:calc(50px*var(--s)) calc(62px*var(--s)) calc(46px*var(--s))}
+.mode-square .num{font-size:calc(216px*var(--s))}
+.mode-square .nm{font-size:calc(54px*var(--s));margin-top:calc(18px*var(--s))}
+.mode-square .meta{margin-top:calc(10px*var(--s));font-size:calc(19px*var(--s))}
+.mode-square .hook{font-size:calc(36px*var(--s));margin-top:calc(18px*var(--s))}
+.mode-square .tag{font-size:calc(21px*var(--s))}
+.mode-square .metrics{margin-top:calc(22px*var(--s))}
+.mode-square .metric .v{font-size:calc(32px*var(--s))}
+.mode-square .rule{margin:calc(14px*var(--s)) 0 calc(20px*var(--s))}
+.mode-square .list{padding-top:calc(18px*var(--s))}
+.mode-square .ft{margin-top:calc(16px*var(--s))}
+
+.mode-wide{--mc:4}
+.mode-wide main{flex-direction:row;gap:calc(58px*var(--s))}
+.mode-wide .left{flex:1.06;min-width:0}
+.mode-wide .list{flex:.84;margin-top:0;padding-top:calc(6px*var(--s));min-width:0}
+.mode-wide .num{font-size:calc(224px*var(--s))}
+.mode-wide .nm{font-size:calc(62px*var(--s))}
+.mode-wide .hook{font-size:calc(42px*var(--s))}
+.mode-wide .tag{font-size:calc(23px*var(--s))}
+.mode-wide .metrics{margin-top:calc(34px*var(--s))}
+
+.mode-strip{--mc:1}
+.mode-strip .wrap{padding:calc(52px*var(--s)) calc(58px*var(--s)) calc(44px*var(--s))}
+.mode-strip main{flex-direction:row;align-items:center;gap:calc(40px*var(--s))}
+.mode-strip .left{flex:1;flex-direction:row;align-items:center;gap:calc(34px*var(--s));min-width:0}
+.mode-strip .rankno{gap:calc(18px*var(--s))}
+.mode-strip .num{font-size:calc(210px*var(--s))}
+.mode-strip .rlab{display:none}
+.mode-strip .tgroup{display:flex;flex-direction:column;min-width:0;flex:1}
+.mode-strip .nm{margin-top:0;font-size:calc(64px*var(--s))}
+.mode-strip .meta{margin-top:calc(10px*var(--s))}
+.mode-strip .hook{margin-top:calc(14px*var(--s));font-size:calc(46px*var(--s))}
+.mode-strip .tag,.mode-strip .list{display:none}
+.mode-strip .metrics{margin-top:0;flex:none;width:calc(200px*var(--s))}
+.mode-strip .metric .v{font-size:calc(52px*var(--s))}
+.mode-strip .ft{margin-top:calc(24px*var(--s))}
+
+/* ---------- 无参数时的导览页 ---------- */
+#hub{position:fixed;inset:0;background:#07080a;z-index:99;overflow:auto;padding:44px;
+  font-family:'Outfit','Microsoft YaHei','微软雅黑',sans-serif;color:#e9edf5}
+#hub h1{font-size:28px;font-weight:800;letter-spacing:-.01em}
+#hub p.sub{color:#6b7488;font-size:14px;margin-top:8px;font-family:'JBM';letter-spacing:.06em}
+#hub .grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:16px;margin-top:28px}
+#hub a{display:block;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.1);
+  border-radius:14px;padding:18px 20px;background:rgba(255,255,255,.02);transition:.25s cubic-bezier(.16,1,.3,1)}
+#hub a:hover{border-color:rgba(107,138,253,.5);background:rgba(107,138,253,.07);transform:translateY(-2px)}
+#hub a b{display:block;font-size:17px;font-weight:700}
+#hub a .p{display:block;margin-top:8px;font-size:12px;font-family:'JBM';color:#6b8afd;letter-spacing:.1em}
+#hub a .u{display:block;margin-top:6px;font-size:13px;color:#a6aec0}
+#hub .tip{margin-top:26px;font-size:13px;color:#6b7488;line-height:1.9;
+  border-top:1px solid rgba(255,255,255,.08);padding-top:18px}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <canvas id="ion"></canvas>
+  <div class="grid"></div>
+  <div class="wrap">
+    <header class="hd">
+      <div class="brand"><i class="dot"></i><b id="brand"></b><span id="brandCn"></span></div>
+      <div class="hd-r"><span class="day" id="day"></span><span id="date"></span></div>
+    </header>
+    <div class="rule"></div>
+    <main>
+      <section class="left">
+        <div class="rankno">
+          <div class="num" id="num"></div>
+          <div class="rlab">GLOBAL LLM RANK</div>
+        </div>
+        <div class="tgroup">
+          <div class="nm" id="nm"></div>
+          <div class="meta" id="meta"></div>
+          <div class="hook" id="hook"></div>
+          <div class="tag" id="tag"></div>
+        </div>
+        <div class="metrics" id="metrics"></div>
+      </section>
+      <section class="list" id="list">
+        <div class="lhd">全球 TOP 20 · 今日切片</div>
+        <div class="rows" id="rows"></div>
+      </section>
+    </main>
+    <footer class="ft">
+      <div class="cta"><i class="sq"></i><span id="cta"></span></div>
+      <div class="ft-r" id="ftr"></div>
+    </footer>
+  </div>
+  <div class="vig"></div>
+  <div class="grain"></div>
+</div>
+
+<script src="../data.js"></script>
+<script src="cover-data.js"></script>
+<script src="cover-fx.js"></script>
+<script>
+(function () {
+  'use strict';
+  var q = new URLSearchParams(location.search);
+
+  /* ---- 没有尺寸参数 → 导览页 ---- */
+  if (!q.get('w') || !q.get('h')) { renderHub(); return; }
+
+  var W = parseInt(q.get('w'), 10), H = parseInt(q.get('h'), 10);
+  /* 注意：const 全局绑定不挂 window，必须用 typeof 探测 */
+  var C  = (typeof COVER   !== 'undefined' && COVER)   || {};
+  var HK = (typeof HOOKS   !== 'undefined' && HOOKS)   || {};
+  var SL = (typeof SUBLINE !== 'undefined' && SUBLINE) || {};
+  var PS = (typeof PRESETS !== 'undefined' && PRESETS) || [];
+  var rank = parseInt(q.get('rank') || C.rank || 1, 10);
+
+  var LIST = (typeof TOP20 !== 'undefined' && TOP20 && TOP20.length) ? TOP20 : [];
+  if (!LIST.length) { document.body.innerHTML = '<p style="color:#fff;padding:40px">data.js 未加载</p>'; return; }
+
+  var m = LIST.filter(function (x) { return x.rank === rank; })[0] || LIST[0];
+
+  /* ---- 版式模式 ---- */
+  var r = W / H, mode, rows;
+  if (r <= 0.62)      { mode = 'tall';     rows = 10; }
+  else if (r <= 0.80) { mode = 'portrait'; rows = 6; }
+  else if (r <= 0.94) { mode = 'compact';  rows = 4; }
+  else if (r <= 1.12) { mode = 'square';   rows = 3; }
+  else if (r >= 1.90) { mode = 'strip';    rows = 0; }
+  else                { mode = 'wide';     rows = 9; }
+
+  /* ---- 缩放系数 ---- */
+  var s = parseFloat(q.get('s'));
+  if (!s) {
+    var preset = PS.filter(function (p) { return p.w === W && p.h === H; })[0];
+    s = preset ? preset.s : (mode === 'wide' || mode === 'strip' ? H / 1080 : W / 1080);
+  }
+
+  var ac = m.accent || '#6b8afd';
+  var rgb = ac.replace('#', '');
+  if (rgb.length === 3) rgb = rgb[0]+rgb[0]+rgb[1]+rgb[1]+rgb[2]+rgb[2];
+  var n = parseInt(rgb, 16), R = (n>>16)&255, G = (n>>8)&255, B = n&255;
+
+  var st = document.documentElement.style;
+  st.setProperty('--W', W + 'px');
+  st.setProperty('--H', H + 'px');
+  st.setProperty('--s', s);
+  st.setProperty('--ac', ac);
+  st.setProperty('--ac2', 'rgba(' + R + ',' + G + ',' + B + ',.32)');
+  st.setProperty('--ac3', 'rgba(' + R + ',' + G + ',' + B + ',.13)');
+  document.getElementById('stage').className = 'stage mode-' + mode;
+
+  /* ---- 文案 ---- */
+  var hookTxt = HK[m.rank] || m.pros[0];
+  var subTxt  = SL[m.rank] || m.best || '';
+
+  document.getElementById('brand').textContent   = C.brand || 'MODEL HUB';
+  document.getElementById('brandCn').textContent = C.brandCn || '';
+  document.getElementById('day').textContent     = 'DAY ' + pad(C.day || m.rank) + ' / ' + (C.dayTotal || 20);
+  document.getElementById('date').textContent    = C.date || '';
+  document.getElementById('num').textContent     = pad(m.rank);
+  document.getElementById('nm').textContent      = m.name;
+
+  var priceShort = String(m.price || '').split('（')[0];
+  document.getElementById('meta').innerHTML =
+    '<span>' + esc(m.vendor) + '</span><span>·</span><span>' + esc(m.modality) + '</span>' +
+    '<span class="pill g">' + esc(m.ctx) + ' 上下文</span>' +
+    (m.open ? '<span class="pill">开放权重</span>' : '');
+
+  document.getElementById('hook').innerHTML = '<i>「</i>' + esc(hookTxt) + '<i>」</i>';
+  document.getElementById('tag').textContent = subTxt;
+
+  var mets = [
+    { k: '综合分', v: m.score, u: '' },
+    { k: '上下文', v: m.ctx,   u: '' },
+    { k: '价格档', v: priceShort, u: '' }
+  ];
+  if (mode === 'wide') mets.push({ k: '权重', v: m.open ? '开源' : '闭源', u: '' });
+  if (mode === 'strip') mets = [{ k: '综合分', v: m.score, u: '' }];
+  document.getElementById('metrics').innerHTML = mets.map(function (x) {
+    return '<div class="metric"><div class="k">' + x.k + '</div><div class="v">' + esc(x.v) + '</div></div>';
+  }).join('');
+
+  /* ---- 榜单切片：把当天主角排到切片第一行，其余按名次 ---- */
+  var slice = [m].concat(LIST.filter(function (x) { return x.rank !== m.rank; })).slice(0, Math.max(rows, 1));
+  if (!rows) slice = [];
+  /* 在切片内部归一化，拉开进度条层次 */
+  var scMax = -1e9, scMin = 1e9;
+  slice.forEach(function (x) {
+    scMax = Math.max(scMax, x.score); scMin = Math.min(scMin, x.score);
+  });
+  var scSpan = (scMax - scMin) || 1;
+  document.getElementById('rows').innerHTML = slice.map(function (x) {
+    var pct = Math.round(20 + 80 * (x.score - scMin) / scSpan);
+    return '<div class="row' + (x.rank === m.rank ? ' on' : '') + '">' +
+      '<div class="r">' + pad(x.rank) + '</div>' +
+      '<div class="n">' + esc(x.name) + '</div>' +
+      '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+      '<div class="s">' + x.score.toFixed(1) + '</div></div>';
+  }).join('');
+
+  document.getElementById('cta').textContent = C.cta || '';
+  document.getElementById('ftr').textContent = (C.site || 'MODEL HUB') + ' · 每日更新';
+
+  /* ---- 离子场：确定性推进后定格 ---- */
+  var cv = document.getElementById('ion');
+  try {
+    var f = new window.IonField(cv, {
+      w: W, h: H, dpr: 2, accent: ac, seed: (C.seed || 1) + W,
+      linkDist: 152 * s, linkAlpha: .40, speed: 1
+    });
+    f.step(240);
+    f.render();
+  } catch (e) { /* 离子场挂了也不能影响出图 */ }
+
+  function pad(v) { v = String(v); return v.length < 2 ? '0' + v : v; }
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  /* ---- 导览页 ---- */
+  function renderHub() {
+    var ps = (typeof PRESETS !== 'undefined' && PRESETS) || [];
+    var Cr = (typeof COVER !== 'undefined' && COVER) || {};
+    var rankNow = Cr.rank || 1;
+    var h = '<h1>MODEL HUB · 每日封面工厂</h1>' +
+      '<p class="sub">DAY ' + pad2(rankNow) + ' / 20 · ' + (Cr.date || '') + '</p>' +
+      '<div class="grid2">';
+    ps.forEach(function (p) {
+      h += '<a href="?w=' + p.w + '&h=' + p.h + '&s=' + p.s + '&rank=' + rankNow + '">' +
+        '<b>' + p.plat + '</b><span class="p">' + p.w + ' × ' + p.h + '</span>' +
+        '<span class="u">' + p.use + '</span></a>';
+    });
+    h += '</div><div class="tip">日更方法：改 cover-data.js 里的 <b>COVER.rank</b>（1–20）和 <b>COVER.day</b>，' +
+      '再跑一次 <b>python export_covers.py</b>，6 个平台尺寸自动重出，版式与配色永不变形。</div>';
+    var d = document.createElement('div'); d.id = 'hub'; d.innerHTML = h;
+    document.body.appendChild(d);
+    document.getElementById('stage').style.display = 'none';
+  }
+  function pad2(v) { v = String(v); return v.length < 2 ? '0' + v : v; }
+})();
+</script>
+</body>
+</html>

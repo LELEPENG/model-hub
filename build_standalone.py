@@ -222,13 +222,25 @@ def main():
         # 5. 预渲染 Top50 榜单 HTML（SEO：爬虫无需执行 JS 即可读到完整排名）
         #    直接替换 <div id="view"></div> 为含预渲染榜单的内容
         #    noscript 嵌入在预渲染内容内部：JS 禁用时显示，启用时隐藏
+        # 语义化标题样式（沿用站点 --d 字体，不指定 color 以继承主题文字色）
+        H2 = ('font-family:var(--d);font-size:clamp(19px,2.4vw,26px);'
+              'font-weight:800;letter-spacing:-.02em;line-height:1.24;'
+              'margin:0 0 12px')
         prerendered = make_prerendered_rank(items)
         prerender_html = (
             '<div id="view" data-prerendered="rank">'
+            '<article>'
+            '<h2 style="' + H2 + '">2026 年 9 月全球大模型排行榜 Top50</h2>'
             '<div class="lab-intro">'
-            '<b>排序方法：</b>以 airankings（7 家独立榜单聚合，2026-09-09）为基准，'
-            '交叉校验 llm-stats 综合指数与 BenchLM BenchAlign v5.2，归一化成本站综合分（满分 100）。'
+            '<p style="margin:0 0 7px">'
+            '<time datetime="2026-09-11">数据核实于 2026 年 9 月 11 日</time>。'
+            '<b>排序方法：</b>以 airankings（7 家独立榜单聚合）为基准，'
+            '交叉校验 llm-stats 综合指数与 BenchLM BenchAlign v5.2，'
+            '归一化成本站综合分（满分 100）。'
+            '</p>'
+            '<p style="margin:0">'
             '<b>点任意一行</b>看它的优势、最适合干什么、以及别拿它干什么。'
+            '</p>'
             '</div>'
             '<div class="rank-tools">'
             '<button class="chip" data-rf="all">全部 50</button>'
@@ -237,11 +249,13 @@ def main():
             '<button class="chip" data-rf="cn">国产模型</button>'
             '</div>'
             + prerendered +
-            '<div class="callout" style="margin-top:20px">'
-            '<b>怎么读这个榜：</b>综合分只做横向对比，不代表任何官方分数。'
+            '<h2 style="' + H2 + ';margin-top:34px">怎么读这个榜</h2>'
+            '<div class="callout">'
+            '<b>综合分只做横向对比，不代表任何官方分数。</b>'
             '真要落地，先看 <b>适不适合你的场景</b>，再看价格——第 8 名的 Kimi K3 用 30% 的价格保留了 96% 的顶配能力，'
             '对大多数人比第 1 名更实用。'
             '</div>'
+            '</article>'
             '<noscript>' + re.sub(r'<noscript>', '', make_noscript(items), count=1) + '</noscript>'
             '</div>'
         )

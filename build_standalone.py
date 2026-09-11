@@ -33,7 +33,10 @@ DIST = os.path.join(BASE, 'dist')
 CSS_FILES = ['styles.css']
 JS_FILES = ['data.js', 'app.js', 'intro.js', 'ions.js', 'fx.js']
 # 部署脚手架：随打包一起拷进 dist/，使 dist/ 成为可直接部署的目录
-SCAFFOLD = ['llms.txt', 'robots.txt', 'sitemap.xml', 'edgeone.json']
+SCAFFOLD = [
+    'llms.txt', 'robots.txt', 'sitemap.xml', 'edgeone.json',
+    'baidu_verify_codeva-TgpH2v8bf3.html',
+]
 
 # 搜索引擎站点所有权验证标签（按平台要求填入，会自动注入 <head>）
 VERIFY_META_TAGS = [
